@@ -1,6 +1,8 @@
+import 'package:atlas_mobile_pi1/core/firestore/firestore_paths.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/activity_level.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/gender.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/repositories/user_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -11,10 +13,14 @@ class UserRepositoryImpl implements UserRepository {
   final FirebaseFirestore _db;
 
   CollectionReference<Map<String, dynamic>> get _users =>
-      _db.collection('users');
+      _db.collection(FirestorePaths.users);
 
   @override
-  Future<void> createUserIfNotExists(String uid, String email) async {
+  Future<void> createUserIfNotExists(
+    String uid,
+    String email, {
+    String? name,
+  }) async {
     final doc = _users.doc(uid);
     final snapshot = await doc.get();
 
@@ -22,15 +28,29 @@ class UserRepositoryImpl implements UserRepository {
       await doc.set({
         'uid': uid,
         'email': email,
-        'name': null,
+        'name': name,
+        'nameLower': name?.trim().toLowerCase(),
         'gender': null,
         'height': null,
         'weight': null,
         'birthDate': null,
         'activityLevel': null,
+        'role': UserRole.student.storageName,
         'profileCompleted': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
+    } else if (name != null && name.trim().isNotEmpty) {
+      final data = snapshot.data();
+      final existingName = data?['name'] as String?;
+      if (existingName == null || existingName.trim().isEmpty) {
+        await doc.set(
+          {
+            'name': name.trim(),
+            'nameLower': name.trim().toLowerCase(),
+          },
+          SetOptions(merge: true),
+        );
+      }
     }
   }
 
@@ -63,6 +83,7 @@ class UserRepositoryImpl implements UserRepository {
       {
         'uid': uid,
         'name': name,
+        'nameLower': name.trim().toLowerCase(),
         'birthDate': Timestamp.fromDate(birthDate),
         'gender': gender.name,
         'height': height,
@@ -70,6 +91,14 @@ class UserRepositoryImpl implements UserRepository {
         'activityLevel': activityLevel.name,
         'profileCompleted': true,
       },
+      SetOptions(merge: true),
+    );
+  }
+
+  @override
+  Future<void> updateRole(String uid, UserRole role) async {
+    await _users.doc(uid).set(
+      {'role': role.storageName},
       SetOptions(merge: true),
     );
   }

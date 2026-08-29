@@ -1,5 +1,6 @@
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/activity_level.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/gender.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
 
 class AppUser {
   const AppUser({
@@ -11,6 +12,7 @@ class AppUser {
     this.weight,
     this.birthDate,
     this.activityLevel,
+    this.role = UserRole.student,
     this.profileCompleted = false,
     this.createdAt,
   });
@@ -23,8 +25,11 @@ class AppUser {
   final double? weight;
   final DateTime? birthDate;
   final ActivityLevel? activityLevel;
+  final UserRole role;
   final bool profileCompleted;
   final DateTime? createdAt;
+
+  bool get isCoach => role == UserRole.coach;
 
   AppUser copyWith({
     String? name,
@@ -33,6 +38,7 @@ class AppUser {
     double? weight,
     DateTime? birthDate,
     ActivityLevel? activityLevel,
+    UserRole? role,
     bool? profileCompleted,
   }) {
     return AppUser(
@@ -44,6 +50,7 @@ class AppUser {
       weight: weight ?? this.weight,
       birthDate: birthDate ?? this.birthDate,
       activityLevel: activityLevel ?? this.activityLevel,
+      role: role ?? this.role,
       profileCompleted: profileCompleted ?? this.profileCompleted,
       createdAt: createdAt,
     );
@@ -59,6 +66,7 @@ class AppUser {
       'weight': weight,
       'birthDate': birthDate,
       'activityLevel': activityLevel?.name,
+      'role': role.storageName,
       'profileCompleted': profileCompleted,
       'createdAt': createdAt,
     };
@@ -75,6 +83,7 @@ class AppUser {
       birthDate: _parseDate(data['birthDate']),
       activityLevel:
           ActivityLevel.fromStorage(data['activityLevel'] as String?),
+      role: UserRoleStorage.fromStorage(data['role'] as String?),
       profileCompleted: data['profileCompleted'] as bool? ?? false,
       createdAt: _parseDate(data['createdAt']),
     );
@@ -84,7 +93,6 @@ class AppUser {
     if (value == null) return null;
     if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
-    // Firestore Timestamp
     try {
       return (value as dynamic).toDate() as DateTime?;
     } catch (_) {

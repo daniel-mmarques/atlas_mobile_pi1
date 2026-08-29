@@ -108,6 +108,17 @@ abstract class AppTypography {
     );
   }
 
+  /// Título das abas principais (Home, Workouts, Calendar).
+  static TextStyle shellTitle(BuildContext context) {
+    return GoogleFonts.inter(
+      fontSize: 28,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.8,
+      height: 1.1,
+      color: AppColors.textPrimary(context),
+    );
+  }
+
   static TextStyle pageTitle(BuildContext context) {
     return GoogleFonts.inter(
       fontSize: 24,

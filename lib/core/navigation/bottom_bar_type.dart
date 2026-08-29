@@ -1,0 +1,4 @@
+enum BottomBarType {
+  navigation,
+  chat,
+}

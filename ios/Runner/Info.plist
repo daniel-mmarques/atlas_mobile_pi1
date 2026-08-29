@@ -68,5 +68,7 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>O Atlas precisa da câmera para escanear o QR de vínculo coach/aluno.</string>
 	</dict>
 </plist>

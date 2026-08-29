@@ -12,7 +12,20 @@
           "package_name": "com.atlas.atlas_mobile_pi1"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "619194088679-aipepejg0eop7a6crohtdbsml642oemg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.atlas.atlas_mobile_pi1",
+            "certificate_hash": "f0801ccdc634cf8e6f635d20f695af512cf3519e"
+          }
+        },
+        {
+          "client_id": "619194088679-6rggee83ehj8cqfvd6qbc2nirpm5up7d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC1kskOdPVmk1DmihTzMcSeUtZH1zhSkQw"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "619194088679-6rggee83ehj8cqfvd6qbc2nirpm5up7d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

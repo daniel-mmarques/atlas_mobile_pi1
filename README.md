@@ -19,7 +19,17 @@ Projeto: **`atlas-160cf`**
 
 1. Authentication → Email/Password ativado
 2. Cloud Firestore criado
-3. Regras sugeridas em `firestore.rules`
+3. **Publicar regras e índices** (obrigatório após clonar/atualizar):
+
+```bash
+npx firebase-tools login
+npx firebase-tools use atlas-160cf
+npx firebase-tools deploy --only firestore
+```
+
+Ou no Console: cole o conteúdo de `firestore.rules` em Firestore → Rules, e crie os índices compostos pedidos pelos links de erro no log (posts + conversations).
+
+Arquivos: `firestore.rules`, `firestore.indexes.json`, `firebase.json`
 
 ### iOS / Web / Desktop
 

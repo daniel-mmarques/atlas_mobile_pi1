@@ -11,4 +11,5 @@ abstract class AppSpacing {
   static const double cardPadding = 16;
   static const double sectionGap = 14;
   static const double navHeight = 72;
+  static const double shellHeaderHeight = 56;
 }

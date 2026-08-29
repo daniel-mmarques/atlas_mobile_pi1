@@ -4,6 +4,7 @@ import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/responsive.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/validators/sign_up_validators.dart';
+import 'package:atlas_mobile_pi1/features/auth/presentation/widgets/auth_input_decoration.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -94,38 +95,6 @@ class _SignInPageState extends State<SignInPage> {
     }
   }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        color: AppColors.lightTextSecondary,
-        fontSize: AppResponsive.font(context, base: 15, min: 13),
-      ),
-      prefixIcon: Icon(icon, color: AppColors.accent),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: AppColors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: AppRadii.button,
-        borderSide: const BorderSide(color: AppColors.lightBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: AppRadii.button,
-        borderSide: const BorderSide(color: AppColors.lightBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadii.button,
-        borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-      ),
-      errorMaxLines: 2,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final titleSize = AppResponsive.font(context, base: 26, min: 20, max: 28);
@@ -203,6 +172,7 @@ class _SignInPageState extends State<SignInPage> {
                           ScrollViewKeyboardDismissBehavior.onDrag,
                       child: Form(
                         key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -210,18 +180,13 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _emailController,
-                              style: TextStyle(
-                                color: AppColors.black,
-                                fontSize: AppResponsive.font(
-                                  context,
-                                  base: 15,
-                                  min: 14,
-                                ),
-                              ),
+                              style: authFieldTextStyle(context),
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
+                              autocorrect: false,
                               enabled: !loading,
-                              decoration: _inputDecoration(
+                              decoration: authInputDecoration(
+                                context,
                                 hint: 'Email',
                                 icon: Icons.email_outlined,
                               ),
@@ -230,20 +195,19 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 14),
                             TextFormField(
                               controller: _passwordController,
-                              style: TextStyle(
-                                color: AppColors.black,
-                                fontSize: AppResponsive.font(
-                                  context,
-                                  base: 15,
-                                  min: 14,
-                                ),
-                              ),
+                              style: authFieldTextStyle(context),
                               obscureText: _obscurePassword,
                               textInputAction: isLogin
                                   ? TextInputAction.done
                                   : TextInputAction.next,
                               enabled: !loading,
-                              decoration: _inputDecoration(
+                              onChanged: (_) {
+                                if (!isLogin) {
+                                  _formKey.currentState?.validate();
+                                }
+                              },
+                              decoration: authInputDecoration(
+                                context,
                                 hint: 'Password',
                                 icon: Icons.lock_outline,
                                 suffix: IconButton(
@@ -266,18 +230,12 @@ class _SignInPageState extends State<SignInPage> {
                               const SizedBox(height: 14),
                               TextFormField(
                                 controller: _confirmPasswordController,
-                                style: TextStyle(
-                                  color: AppColors.black,
-                                  fontSize: AppResponsive.font(
-                                    context,
-                                    base: 15,
-                                    min: 14,
-                                  ),
-                                ),
+                                style: authFieldTextStyle(context),
                                 obscureText: _obscureConfirmPassword,
                                 textInputAction: TextInputAction.done,
                                 enabled: !loading,
-                                decoration: _inputDecoration(
+                                decoration: authInputDecoration(
+                                  context,
                                   hint: 'Confirm password',
                                   icon: Icons.lock_outline,
                                   suffix: IconButton(
@@ -374,6 +332,10 @@ class _SignInPageState extends State<SignInPage> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 20),
+                            _buildSocialDivider(context),
+                            const SizedBox(height: 16),
+                            _buildSocialButtons(context),
                           ],
                         ),
                       ),
@@ -385,6 +347,75 @@ class _SignInPageState extends State<SignInPage> {
           },
         ),
       ),
+    );
+  }
+
+  Future<void> _socialLogin(
+    Future<void> Function() action,
+  ) async {
+    setState(() => loading = true);
+    try {
+      await action();
+      if (!mounted) return;
+      final auth = context.read<AuthService>();
+      if (auth.needsProfileSetup) {
+        context.go(AppRoutes.signup);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Widget _buildSocialDivider(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider(color: AppColors.lightBorder)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'ou continue com',
+            style: TextStyle(
+              color: AppColors.lightTextSecondary,
+              fontSize: AppResponsive.font(context, base: 13, min: 12),
+            ),
+          ),
+        ),
+        const Expanded(child: Divider(color: AppColors.lightBorder)),
+      ],
+    );
+  }
+
+  Widget _buildSocialButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SocialAuthButton(
+            label: 'Google',
+            icon: Icons.g_mobiledata_rounded,
+            enabled: !loading,
+            onPressed: () => _socialLogin(
+              () => context.read<AuthService>().loginWithGoogle(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SocialAuthButton(
+            label: 'Apple',
+            icon: Icons.apple,
+            enabled: !loading,
+            onPressed: () => _socialLogin(
+              () => context.read<AuthService>().loginWithApple(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -473,6 +504,47 @@ class _SignInPageState extends State<SignInPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  const _SocialAuthButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    required this.enabled,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: enabled ? onPressed : null,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(50),
+        foregroundColor: AppColors.black,
+        side: const BorderSide(color: AppColors.lightBorder),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 22),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: AppResponsive.font(context, base: 14, min: 13),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
