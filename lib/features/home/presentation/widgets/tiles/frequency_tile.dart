@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/tiles/home_widget_tile.dart';
@@ -47,7 +48,7 @@ class FrequencyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Workout>>(
-      stream: context.read<WorkoutService>().watchUserWorkouts(userId),
+      stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
         final workouts = snapshot.data ?? const <Workout>[];
         final week = WorkoutMetrics.weeklyFrequency(workouts);
@@ -69,7 +70,7 @@ class FrequencyTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  hasData ? 'Training frequency' : 'Not logged',
+                  hasData ? 'Training frequency' : context.l10n.widgetNotLogged,
                   style: TextStyle(
                     color: AppColors.textSecondary(context),
                     fontSize: 12,
@@ -104,7 +105,7 @@ class FrequencyTile extends StatelessWidget {
         return HomeTileNumber(
           value: '$week',
           title: name,
-          subtitle: hasData ? 'This week' : 'Not logged',
+          subtitle: hasData ? 'This week' : context.l10n.widgetNotLogged,
         );
       },
     );

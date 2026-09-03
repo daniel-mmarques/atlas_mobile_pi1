@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/responsive.dart';
@@ -35,6 +36,7 @@ class _SignUpPageState extends State<SignUpPage> {
   ];
 
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _birthDateController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
@@ -42,23 +44,16 @@ class _SignUpPageState extends State<SignUpPage> {
   Gender? _gender;
   ActivityLevel? _activityLevel;
 
-  static const _titles = [
-    'Vamos começar\nseu cadastro',
-    'Nos fale um pouco\ndo seu físico',
-    'Qual o seu nível\nde atividade?',
-  ];
-
   static const _subtitles = [
     'Primeiro informe alguns dados básicos.',
     'Isso nos ajuda a projetar os melhores treinos.',
     'Escolha a opção que melhor descreve sua rotina.',
   ];
 
-  static const _stepLabels = ['Dados', 'Físico', 'Atividade'];
-
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _birthDateController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -67,6 +62,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _completeRegistration() async {
     setState(() => _isSaving = true);
+    final l10n = context.l10n;
 
     try {
       final birthDate = DateFormatters.parseDate(_birthDateController.text);
@@ -81,9 +77,24 @@ class _SignUpPageState extends State<SignUpPage> {
         _weightController.text.replaceAll(',', '.'),
       );
 
+      final username = _usernameController.text.trim();
+      final available = await widget.usersRepository.isUsernameAvailable(
+        username,
+        excludeUid: widget.uid,
+      );
+      if (!available) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.validationUsernameTaken)),
+          );
+        }
+        return;
+      }
+
       await widget.usersRepository.completeProfile(
         uid: widget.uid,
         name: _nameController.text.trim(),
+        username: username,
         birthDate: birthDate,
         gender: _gender!,
         height: height,
@@ -92,10 +103,13 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     } catch (e) {
       if (mounted) {
+        final message = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Não foi possível salvar seu perfil. Tente novamente.',
+              message.contains('@') || message.contains('perfil')
+                  ? message
+                  : l10n.errorGeneric,
             ),
           ),
         );
@@ -127,13 +141,24 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final titles = [
+      l10n.signUpTitleAccount,
+      l10n.signUpTitleProfile,
+      l10n.signUpTitleBody,
+    ];
+    final stepLabels = [
+      l10n.signUpStepAccount,
+      l10n.signUpStepProfile,
+      l10n.signUpStepBody,
+    ];
     final titleSize = AppResponsive.font(context, base: 26, min: 20, max: 28);
     final subtitleSize = AppResponsive.font(context, base: 15, min: 13, max: 16);
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final short = AppResponsive.isShort(context);
 
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.surface(context),
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         bottom: false,
@@ -160,9 +185,9 @@ class _SignUpPageState extends State<SignUpPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _titles[_currentStep],
+                              titles[_currentStep],
                               style: TextStyle(
-                                color: AppColors.white,
+                                color: AppColors.textPrimary(context),
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.w900,
                                 height: 1.2,
@@ -172,7 +197,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             Text(
                               _subtitles[_currentStep],
                               style: TextStyle(
-                                color: AppColors.darkTextSecondary,
+                                color: AppColors.textSecondary(context),
                                 fontSize: subtitleSize,
                                 height: 1.35,
                               ),
@@ -187,8 +212,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   constraints: BoxConstraints(maxHeight: panelMaxHeight),
                   child: Container(
                     width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: AppColors.white,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSecondary(context),
                       borderRadius: AppRadii.authPanel,
                     ),
                     child: SingleChildScrollView(
@@ -205,7 +230,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         children: [
                           _StepIndicator(
                             currentStep: _currentStep,
-                            labels: _stepLabels,
+                            labels: stepLabels,
                           ),
                           const SizedBox(height: 20),
                           AnimatedSwitcher(
@@ -221,9 +246,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               child: TextButton(
                                 onPressed: _isSaving ? null : _onBack,
                                 child: Text(
-                                  'Voltar',
+                                  l10n.signUpBack,
                                   style: TextStyle(
-                                    color: AppColors.accent,
+                                    color: AppColors.accentOf(context),
                                     fontSize: AppResponsive.font(
                                       context,
                                       base: 14,
@@ -244,26 +269,26 @@ class _SignUpPageState extends State<SignUpPage> {
                                 onPressed: _isSaving ? null : _onContinue,
                                 style: ElevatedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(50),
-                                  backgroundColor: AppColors.accent,
+                                  backgroundColor: AppColors.accentOf(context),
                                   disabledBackgroundColor:
-                                      AppColors.accent.withValues(alpha: 0.6),
+                                      AppColors.accentOf(context).withValues(alpha: 0.6),
                                   shape: const RoundedRectangleBorder(
                                     borderRadius: AppRadii.pill,
                                   ),
                                 ),
                                 child: _isSaving
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         height: 22,
                                         width: 22,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.white,
+                                          color: AppColors.onAccentOf(context),
                                         ),
                                       )
                                     : Text(
                                         _currentStep == 2
-                                            ? 'Finalizar'
-                                            : 'Próximo',
+                                            ? l10n.signUpFinish
+                                            : l10n.signUpNext,
                                         style: TextStyle(
                                           fontSize: AppResponsive.font(
                                             context,
@@ -271,7 +296,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                             min: 14,
                                           ),
                                           fontWeight: FontWeight.w600,
-                                          color: AppColors.white,
+                                          color: AppColors.onAccentOf(context),
                                         ),
                                       ),
                               ),
@@ -296,6 +321,7 @@ class _SignUpPageState extends State<SignUpPage> {
         return _FirstStepForm(
           formKey: _formKeys[0],
           nameController: _nameController,
+          usernameController: _usernameController,
           birthDateController: _birthDateController,
         );
       case 1:
@@ -336,8 +362,8 @@ class _StepIndicator extends StatelessWidget {
                 height: 2,
                 margin: const EdgeInsets.only(left: 6, right: 6, bottom: 18),
                 color: i <= currentStep
-                    ? AppColors.accent
-                    : AppColors.lightBorder,
+                    ? AppColors.accentOf(context)
+                    : AppColors.border(context),
               ),
             ),
           Column(
@@ -348,8 +374,8 @@ class _StepIndicator extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: i <= currentStep
-                      ? AppColors.accent
-                      : AppColors.lightBorder,
+                      ? AppColors.accentOf(context)
+                      : AppColors.border(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -360,8 +386,8 @@ class _StepIndicator extends StatelessWidget {
                   fontWeight:
                       i == currentStep ? FontWeight.w700 : FontWeight.w500,
                   color: i <= currentStep
-                      ? AppColors.black
-                      : AppColors.lightTextSecondary,
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -376,15 +402,18 @@ class _FirstStepForm extends StatelessWidget {
   const _FirstStepForm({
     required this.formKey,
     required this.nameController,
+    required this.usernameController,
     required this.birthDateController,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController nameController;
+  final TextEditingController usernameController;
   final TextEditingController birthDateController;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
       key: formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -397,10 +426,34 @@ class _FirstStepForm extends StatelessWidget {
             textCapitalization: TextCapitalization.words,
             decoration: authInputDecoration(
               context,
-              hint: 'Seu nome',
+              hint: l10n.signUpNameHint,
               icon: Icons.drive_file_rename_outline,
             ),
-            validator: CreateUserValidators.names,
+            validator: (value) => CreateUserValidators.names(value, l10n),
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: usernameController,
+            style: authFieldTextStyle(context),
+            textInputAction: TextInputAction.next,
+            autocorrect: false,
+            enableSuggestions: false,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9._@]')),
+              TextInputFormatter.withFunction((oldValue, newValue) {
+                final text = newValue.text.toLowerCase();
+                return newValue.copyWith(
+                  text: text,
+                  selection: TextSelection.collapsed(offset: text.length),
+                );
+              }),
+            ],
+            decoration: authInputDecoration(
+              context,
+              hint: l10n.signUpUsernameHint,
+              icon: Icons.alternate_email_rounded,
+            ),
+            validator: (value) => CreateUserValidators.username(value, l10n),
           ),
           const SizedBox(height: 14),
           TextFormField(
@@ -410,10 +463,10 @@ class _FirstStepForm extends StatelessWidget {
             keyboardType: TextInputType.none,
             decoration: authInputDecoration(
               context,
-              hint: 'Data de nascimento',
+              hint: l10n.signUpBirthHint,
               icon: Icons.calendar_month,
             ),
-            validator: CreateUserValidators.age,
+            validator: (value) => CreateUserValidators.age(value, l10n),
             onTap: () async {
               final now = DateTime.now();
               final pickedDate = await showDatePicker(
@@ -451,6 +504,7 @@ class _SecondStepForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final stackMetrics = AppResponsive.widthOf(context) < 400;
 
     final heightField = TextFormField(
@@ -462,10 +516,10 @@ class _SecondStepForm extends StatelessWidget {
       ],
       decoration: authInputDecoration(
         context,
-        hint: 'Altura (m)',
+        hint: l10n.signUpHeightHint,
         icon: Icons.height_rounded,
       ),
-      validator: CreateUserValidators.height,
+      validator: (value) => CreateUserValidators.height(value, l10n),
     );
 
     final weightField = TextFormField(
@@ -477,10 +531,10 @@ class _SecondStepForm extends StatelessWidget {
       ],
       decoration: authInputDecoration(
         context,
-        hint: 'Peso (kg)',
+        hint: l10n.signUpWeightHint,
         icon: Icons.scale,
       ),
-      validator: CreateUserValidators.weight,
+      validator: (value) => CreateUserValidators.weight(value, l10n),
     );
 
     return Form(
@@ -493,11 +547,11 @@ class _SecondStepForm extends StatelessWidget {
             initialValue: gender,
             isExpanded: true,
             style: authFieldTextStyle(context),
-            dropdownColor: AppColors.white,
-            iconEnabledColor: AppColors.accent,
+            dropdownColor: AppColors.surfaceSecondary(context),
+            iconEnabledColor: AppColors.accentOf(context),
             decoration: authInputDecoration(
               context,
-              hint: 'Sexo',
+              hint: l10n.signUpGenderHint,
               icon: Icons.person_outline,
             ),
             items: Gender.values
@@ -505,14 +559,14 @@ class _SecondStepForm extends StatelessWidget {
                   (g) => DropdownMenuItem(
                     value: g,
                     child: Text(
-                      g.label,
+                      g.label(l10n),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 )
                 .toList(),
             onChanged: onGenderChanged,
-            validator: CreateUserValidators.gender,
+            validator: (value) => CreateUserValidators.gender(value, l10n),
           ),
           const SizedBox(height: 14),
           if (stackMetrics) ...[
@@ -547,6 +601,7 @@ class _ThirdStepForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
       key: formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -555,11 +610,11 @@ class _ThirdStepForm extends StatelessWidget {
         initialValue: activityLevel,
         isExpanded: true,
         style: authFieldTextStyle(context),
-        dropdownColor: AppColors.white,
-        iconEnabledColor: AppColors.accent,
+        dropdownColor: AppColors.surfaceSecondary(context),
+        iconEnabledColor: AppColors.accentOf(context),
         decoration: authInputDecoration(
           context,
-          hint: 'Nível de atividade',
+          hint: l10n.signUpActivityHint,
           icon: Icons.directions_run,
         ),
         items: ActivityLevel.values
@@ -567,7 +622,7 @@ class _ThirdStepForm extends StatelessWidget {
               (level) => DropdownMenuItem(
                 value: level,
                 child: Text(
-                  level.label,
+                  level.label(l10n),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -579,7 +634,7 @@ class _ThirdStepForm extends StatelessWidget {
                 (level) => Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    level.label,
+                    level.label(l10n),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
@@ -588,7 +643,7 @@ class _ThirdStepForm extends StatelessWidget {
               .toList();
         },
         onChanged: onActivityChanged,
-        validator: CreateUserValidators.activityLevel,
+        validator: (value) => CreateUserValidators.activityLevel(value, l10n),
       ),
     );
   }

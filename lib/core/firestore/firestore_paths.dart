@@ -1,5 +1,6 @@
 class FirestorePaths {
   static const users = 'users';
+  static const usernames = 'usernames';
   static const workouts = 'workouts';
   static const templates = 'templates';
   static const posts = 'posts';

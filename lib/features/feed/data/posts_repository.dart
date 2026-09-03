@@ -8,6 +8,7 @@ abstract class PostsRepository {
   Future<void> createPostFromWorkout({
     required String userId,
     required String userName,
+    String username = '',
     required String workoutName,
     required int volume,
     required bool isPublic,
@@ -52,6 +53,7 @@ class PostsRepositoryImpl implements PostsRepository {
   Future<void> createPostFromWorkout({
     required String userId,
     required String userName,
+    String username = '',
     required String workoutName,
     required int volume,
     required bool isPublic,
@@ -59,6 +61,7 @@ class PostsRepositoryImpl implements PostsRepository {
     await _db.collection(FirestorePaths.posts).add({
       'userId': userId,
       'userName': userName,
+      'username': username,
       'userPhotoUrl': '',
       'caption': workoutName,
       'imageUrl': '',

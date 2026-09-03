@@ -1,4 +1,3 @@
-import 'package:atlas_mobile_pi1/core/navigation/bottom_bar_type.dart';
 import 'package:atlas_mobile_pi1/ui/widgets/bottom_bar/bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +26,6 @@ class NavigationPage extends StatelessWidget {
                   index,
                   initialLocation: index == shell.currentIndex,
                 ),
-                type: BottomBarType.navigation,
               ),
             ),
           ),

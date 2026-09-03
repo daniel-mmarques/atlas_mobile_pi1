@@ -1,5 +1,9 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/enums/workout_source.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
@@ -19,30 +23,27 @@ class WorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AppCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      borderRadius: AppRadii.card,
       onTap: () => context.push(
         AppRoutes.workoutDetails(workout.id),
         extra: workout,
       ),
       onLongPress: () {
-        showModalBottomSheet(
-          context: context,
-          useRootNavigator: true,
-          backgroundColor: Colors.transparent,
-          isScrollControlled: true,
-          builder: (_) => WorkoutBottomSheet(
-            workoutName: workout.name,
-            onDelete: () async {
-              Navigator.pop(context);
-              await context.read<WorkoutService>().deleteWorkout(workout.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Treino excluído')),
-                );
-              }
-            },
-          ),
+        showWorkoutBottomSheet(
+          context,
+          workoutName: workout.name,
+          onDelete: () async {
+            Navigator.pop(context);
+            await context.read<WorkoutService>().deleteWorkout(workout.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.workoutsDeleted)),
+              );
+            }
+          },
         );
       },
       child: Row(
@@ -53,24 +54,19 @@ class WorkoutCard extends StatelessWidget {
               children: [
                 Text(
                   splitTitleTwoLines(workout.name),
-                  style: const TextStyle(
-                    fontSize: 25,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
-                  ),
+                  style: AppTypography.cardTitle(context),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: AppSpacing.md + 3),
                 _WorkoutInfoRow(
                   count: workout.exerciseCount,
                   duration: workout.formattedDuration,
                 ),
                 if (workout.source == WorkoutSource.coachAssigned) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Atribuído pelo coach',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.mutedTeal,
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.workoutsAssignedByCoach,
+                    style: AppTypography.caption(context).copyWith(
+                      color: AppColors.accentOf(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -96,9 +92,9 @@ class _WorkoutInfoRow extends StatelessWidget {
       children: [
         _ExerciseBadge(count: count),
         const SizedBox(width: 6),
-        const Text(
-          'Exercises',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        Text(
+          context.l10n.workoutsExercises,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const Spacer(),
         Text(
@@ -120,13 +116,13 @@ class _ExerciseBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.mutedTeal,
+        color: AppColors.accentOf(context),
         borderRadius: BorderRadius.circular(25),
       ),
       child: Text(
         '$count',
         style: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimary,
+          color: AppColors.onAccentOf(context),
           fontSize: 14,
           fontWeight: FontWeight.bold,
         ),

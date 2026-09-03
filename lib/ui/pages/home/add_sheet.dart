@@ -1,29 +1,22 @@
-import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
-import 'package:atlas_mobile_pi1/services/workout_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:atlas_mobile_pi1/features/workouts/presentation/create_routine/show_create_routine_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 Future<void> showAddSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showAtlasSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
     builder: (_) {
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.95,
-        minChildSize: 0.95,
-        maxChildSize: 0.95,
+        initialChildSize: AppSpacing.sheetInitial,
+        minChildSize: AppSpacing.sheetMin,
+        maxChildSize: AppSpacing.sheetMax,
+        shouldCloseOnMinExtent: true,
         builder: (_, scrollController) {
           return AddSheet(scrollController: scrollController);
         },
@@ -37,110 +30,83 @@ class AddSheet extends StatelessWidget {
 
   final ScrollController? scrollController;
 
-  Future<void> _createWorkout(BuildContext context) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
-    final workoutService = context.read<WorkoutService>();
-    final workout = await workoutService.createEmptyWorkout(
-      userId,
-      name: 'Empty Workout',
-    );
-
-    if (!context.mounted) return;
+  Future<void> _createRoutine(BuildContext context) async {
     Navigator.of(context).pop();
-
-    context.push(AppRoutes.workoutSession(workout.id), extra: workout);
+    await showCreateRoutineSheet(context);
   }
 
   void _comingSoon(BuildContext context, String label) {
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label em breve')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.addSheetComingSoon(label))),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final secondary = AppColors.textSecondary(context);
+    final l10n = context.l10n;
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        0,
+        0,
+        0,
+        AppSpacing.sheetPaddingB,
+      ),
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border(context).withValues(alpha: 0.7),
-              borderRadius: AppRadii.pill,
-            ),
+        AtlasSheetChrome(
+          title: l10n.addTitle,
+          subtitle: l10n.addSubtitle,
+          onNav: () => Navigator.of(context).pop(),
+          isDismiss: true,
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sheetPaddingH,
           ),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            icon: Icon(
-              Icons.arrow_downward_rounded,
-              size: 30,
-              color: AppColors.textPrimary(context),
-            ),
+          child: Column(
+            children: [
+              _AddOption(
+                icon: Icons.add_rounded,
+                title: l10n.addSheetWorkout,
+                subtitle: l10n.addSheetWorkoutSubtitle,
+                actionLabel: l10n.addActionCreate,
+                onAction: () => _createRoutine(context),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap + AppSpacing.sm),
+              _AddOption(
+                icon: Icons.auto_awesome_rounded,
+                title: l10n.addSheetRoutine,
+                subtitle: l10n.addSheetRoutineSubtitle,
+                actionLabel: l10n.addActionGet,
+                onAction: () => _comingSoon(context, l10n.addSheetRoutine),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap + AppSpacing.sm),
+              _AddOption(
+                icon: Icons.open_in_full_rounded,
+                title: l10n.addSheetMetrics,
+                subtitle: l10n.addSheetMetricsSubtitle,
+                actionLabel: l10n.addActionAdd,
+                onAction: () => _comingSoon(context, l10n.addSheetMetrics),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap + AppSpacing.sm),
+              _AddOption(
+                icon: Icons.folder_outlined,
+                title: l10n.addSheetFolder,
+                subtitle: l10n.addSheetFolderSubtitle,
+                actionLabel: l10n.addActionAdd,
+                onAction: () => _comingSoon(context, l10n.addSheetFolder),
+              ),
+              SizedBox(
+                height: MediaQuery.paddingOf(context).bottom > 0
+                    ? AppSpacing.sm
+                    : AppSpacing.md,
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Add',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.6,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Create workouts, get a tailored workout routine and add widgets to your dashboard.',
-          style: TextStyle(color: secondary, fontSize: 15, height: 1.35),
-        ),
-        const SizedBox(height: 28),
-        _AddOption(
-          icon: Icons.add_rounded,
-          title: 'A workout',
-          subtitle: 'Create a new workout',
-          actionLabel: 'Create',
-          onAction: () => _createWorkout(context),
-        ),
-        const SizedBox(height: 22),
-        _AddOption(
-          icon: Icons.auto_awesome_rounded,
-          title: 'Tailored routine',
-          subtitle: 'Get a gym routine from us',
-          actionLabel: 'Get',
-          onAction: () => _comingSoon(context, 'Rotina personalizada'),
-        ),
-        const SizedBox(height: 22),
-        _AddOption(
-          icon: Icons.open_in_full_rounded,
-          title: 'Body metrics',
-          subtitle: 'Track changes over time',
-          actionLabel: 'Add',
-          onAction: () => _comingSoon(context, 'Body metrics'),
-        ),
-        const SizedBox(height: 22),
-        _AddOption(
-          icon: Icons.folder_outlined,
-          title: 'Folder',
-          subtitle: 'Group things on the dash',
-          actionLabel: 'Add',
-          onAction: () => _comingSoon(context, 'Folders'),
-        ),
-        SizedBox(
-          height: MediaQuery.paddingOf(context).bottom > 0
-              ? AppSpacing.sm
-              : AppSpacing.md,
         ),
       ],
     );

@@ -1,10 +1,15 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/messages/data/conversations_repository.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/entities/chat_message.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/entities/conversation.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/enums/conversation_type.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
+import 'package:atlas_mobile_pi1/ui/components/app_action_button.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -61,7 +66,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       await context.read<ConversationsRepository>().sendMessage(
             conversationId: widget.conversationId,
             senderId: uid,
-            senderName: auth.appUser?.name ?? auth.appUser?.email ?? 'User',
+            senderName: auth.appUser?.displayLabel ??
+                auth.appUser?.email ??
+                'User',
             text: text,
           );
       _controller.clear();
@@ -78,56 +85,63 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
-  String _relativeTime(DateTime dt) {
+  String _relativeTime(BuildContext context, DateTime dt) {
+    final locale = Localizations.localeOf(context).toString();
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'agora';
     if (diff.inHours < 1) return '${diff.inMinutes} min ago';
     if (diff.inHours < 24) return '${diff.inHours} h ago';
     if (diff.inDays == 1) return '1 day ago';
-    return DateFormat('dd/MM HH:mm').format(dt);
+    return DateFormat('dd/MM HH:mm', locale).format(dt);
   }
 
   void _showCommunityInvite(BuildContext context) {
     final conv = _conversation;
     if (conv == null) return;
+    final l10n = context.l10n;
     final payload = conv.inviteToken != null
         ? 'atlas://community?token=${conv.inviteToken}'
         : 'atlas://community?id=${conv.id}';
 
-    showModalBottomSheet<void>(
+    showAtlasSheet<void>(
       context: context,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      isScrollControlled: false,
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Convidar para ${conv.title}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              QrImageView(
-                data: payload,
-                size: 200,
-                backgroundColor: Colors.white,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: payload));
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Link copiado')),
-                  );
-                },
-                child: const Text('Copiar link'),
-              ),
-            ],
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sheetPaddingB),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AtlasSheetChrome(
+                  title: l10n.messagesInviteTitle(conv.title),
+                  onNav: () => Navigator.pop(ctx),
+                  isDismiss: true,
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                QrImageView(
+                  data: payload,
+                  size: 200,
+                  backgroundColor: Colors.white,
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sheetPaddingH,
+                  ),
+                  child: AppActionButton.sheet(
+                    label: l10n.copyLink,
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: payload));
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.linkCopied)),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -138,11 +152,13 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final uid = auth.user?.uid ?? '';
+    final l10n = context.l10n;
     final isGeneral =
         widget.conversationId == ConversationsRepositoryImpl.generalId ||
             _conversation?.type == ConversationType.general;
-    final title = _conversation?.displayTitle(uid) ??
-        (isGeneral ? 'Geral' : 'Chat');
+    final title = isGeneral
+        ? l10n.messagesGeneral
+        : (_conversation?.displayTitle(uid) ?? l10n.chatTitle);
 
     return Scaffold(
       appBar: AppBar(
@@ -204,7 +220,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       showHandle: isGeneral ||
                           _conversation?.type == ConversationType.community ||
                           _conversation?.type == ConversationType.coach,
-                      relativeTime: _relativeTime(msg.createdAt),
+                      relativeTime: _relativeTime(context, msg.createdAt),
                     );
                   },
                 );
@@ -224,7 +240,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
-                        hintText: 'Message...',
+                        hintText: l10n.messagesMessageHint,
                         filled: true,
                         fillColor: AppColors.component(context),
                         border: OutlineInputBorder(
@@ -277,9 +293,13 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final handle = message.senderName.trim().isEmpty
-        ? 'user'
-        : message.senderName.trim().toLowerCase().replaceAll(' ', '');
+    final raw = message.senderName.trim();
+    final handle = raw.isEmpty
+        ? '@user'
+        : (raw.startsWith('@') ? raw : '@${raw.replaceAll(' ', '').toLowerCase()}');
+    final initial = handle.replaceFirst('@', '');
+    final initialChar =
+        initial.isNotEmpty ? initial[0].toUpperCase() : '?';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -289,12 +309,13 @@ class _MessageBubble extends StatelessWidget {
           if (showAvatar)
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.accentOf(context),
               child: Text(
-                message.senderName.isNotEmpty
-                    ? message.senderName[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                initialChar,
+                style: TextStyle(
+                  color: AppColors.onAccentOf(context),
+                  fontSize: 12,
+                ),
               ),
             )
           else
@@ -320,7 +341,7 @@ class _MessageBubble extends StatelessWidget {
                   if (showHandle) ...[
                     const SizedBox(height: 8),
                     Text(
-                      '@$handle · $relativeTime',
+                      '$handle · $relativeTime',
                       style: TextStyle(
                         color: AppColors.textSecondary(context),
                         fontSize: 12,

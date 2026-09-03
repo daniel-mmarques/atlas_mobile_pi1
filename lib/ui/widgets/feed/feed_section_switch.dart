@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
@@ -17,17 +18,18 @@ class FeedSectionSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _TabLabel(
-          label: 'Discover',
+          label: l10n.feedDiscover,
           isActive: selected == FeedType.discover,
           onTap: () => onChanged(FeedType.discover),
         ),
         const SizedBox(width: AppSpacing.xl),
         _TabLabel(
-          label: 'Friends',
+          label: l10n.feedFriends,
           isActive: selected == FeedType.following,
           onTap: () => onChanged(FeedType.following),
         ),
@@ -68,7 +70,8 @@ class _TabLabel extends StatelessWidget {
             shadows: isActive
                 ? [
                     Shadow(
-                      color: Colors.black.withValues(alpha: 0.35),
+                      color: AppColors.textPrimary(context)
+                          .withValues(alpha: 0.35),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),

@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/tiles/home_widget_tile.dart';
@@ -22,7 +23,7 @@ class StreakTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Workout>>(
-      stream: context.read<WorkoutService>().watchUserWorkouts(userId),
+      stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
         final workouts = snapshot.data ?? const <Workout>[];
         final streak = WorkoutMetrics.streak(workouts);
@@ -37,7 +38,7 @@ class StreakTile extends StatelessWidget {
           title: name,
           subtitle: hasData
               ? (streak.currentStreak == 1 ? '1 day streak' : 'days streak')
-              : 'Not logged',
+              : context.l10n.widgetNotLogged,
         );
       },
     );
@@ -78,7 +79,7 @@ class _StreakCalendar extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
           Text(
-            hasData ? 'days streak' : 'Not logged',
+            hasData ? 'days streak' : context.l10n.widgetNotLogged,
             style: TextStyle(
               color: AppColors.textSecondary(context),
               fontSize: 12,
@@ -110,7 +111,7 @@ class _StreakCalendar extends StatelessWidget {
                         height: size,
                         decoration: BoxDecoration(
                           color: isActive
-                              ? AppColors.accent
+                              ? AppColors.accentOf(context)
                               : AppColors.component(context),
                           borderRadius: BorderRadius.circular(5),
                           border: isToday

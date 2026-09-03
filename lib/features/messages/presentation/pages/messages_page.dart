@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -60,10 +61,11 @@ class _MessagesPageState extends State<MessagesPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final userId = auth.user?.uid;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: Text(l10n.messagesTitle),
         centerTitle: false,
         actions: [
           PlatinumIconButton(
@@ -81,12 +83,12 @@ class _MessagesPageState extends State<MessagesPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.messagesNewCommunity),
         icon: const Icon(Icons.group_add_rounded),
-        label: const Text('Comunidade'),
+        label: Text(l10n.messagesCommunity),
       ),
       body: userId == null
           ? Center(
               child: Text(
-                'Faça login para ver suas conversas.',
+                l10n.feedLoginRequired,
                 style: TextStyle(color: AppColors.textSecondary(context)),
               ),
             )
@@ -105,7 +107,10 @@ class _MessagesPageState extends State<MessagesPage> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 88),
+                  padding: EdgeInsets.only(
+                    bottom: AppSpacing.shellBottomInset +
+                        MediaQuery.paddingOf(context).bottom,
+                  ),
                   itemCount: conversations.length,
                   separatorBuilder: (_, _) => Divider(
                     height: 1,
@@ -143,7 +148,7 @@ class _EmptyMessages extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Nenhuma conversa ainda',
+              context.l10n.messagesEmpty,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -168,18 +173,24 @@ class _ConversationTile extends StatelessWidget {
   final Conversation conversation;
   final String currentUserId;
 
-  String _formatTime(DateTime dt) {
+  String _formatTime(BuildContext context, DateTime dt) {
+    final locale = Localizations.localeOf(context).toString();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(dt.year, dt.month, dt.day);
-    if (day == today) return DateFormat('HH:mm').format(dt);
-    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
-    return DateFormat('dd/MM').format(dt);
+    if (day == today) return DateFormat('HH:mm', locale).format(dt);
+    if (day == today.subtract(const Duration(days: 1))) {
+      return context.l10n.yesterday;
+    }
+    return DateFormat('dd/MM', locale).format(dt);
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = conversation.displayTitle(currentUserId);
+    final l10n = context.l10n;
+    final title = conversation.isGeneral
+        ? l10n.messagesGeneral
+        : conversation.displayTitle(currentUserId);
     final preview = conversation.inboxPreview(currentUserId);
     final isGeneral = conversation.isGeneral;
 
@@ -191,7 +202,7 @@ class _ConversationTile extends StatelessWidget {
       leading: CircleAvatar(
         radius: 26,
         backgroundColor: isGeneral
-            ? AppColors.accent
+            ? AppColors.accentOf(context)
             : AppColors.component(context),
         child: Icon(
           isGeneral
@@ -201,7 +212,9 @@ class _ConversationTile extends StatelessWidget {
                   : conversation.type == ConversationType.coach
                       ? Icons.fitness_center_rounded
                       : Icons.person_rounded,
-          color: isGeneral ? Colors.white : AppColors.textPrimary(context),
+          color: isGeneral
+              ? AppColors.onAccentOf(context)
+              : AppColors.textPrimary(context),
         ),
       ),
       title: Row(
@@ -219,13 +232,13 @@ class _ConversationTile extends StatelessWidget {
               margin: const EdgeInsets.only(left: 6),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.2),
+                color: AppColors.accentOf(context).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
+              child: Text(
                 '48h',
                 style: TextStyle(
-                  color: AppColors.accent,
+                  color: AppColors.accentOf(context),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -240,7 +253,7 @@ class _ConversationTile extends StatelessWidget {
         style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14),
       ),
       trailing: Text(
-        _formatTime(conversation.updatedAt),
+        _formatTime(context, conversation.updatedAt),
         style: TextStyle(
           color: AppColors.textSecondary(context),
           fontSize: 12,

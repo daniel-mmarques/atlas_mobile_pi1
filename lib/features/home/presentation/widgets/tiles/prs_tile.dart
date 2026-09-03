@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/tiles/home_widget_tile.dart';
@@ -56,7 +57,7 @@ class PrsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Workout>>(
-      stream: context.read<WorkoutService>().watchUserWorkouts(userId),
+      stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
         final workouts = snapshot.data ?? const <Workout>[];
         final count = WorkoutMetrics.personalRecordsCount(workouts);
@@ -78,7 +79,7 @@ class PrsTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  hasData ? 'Personal records' : 'Not logged',
+                  hasData ? 'Personal records' : context.l10n.widgetNotLogged,
                   style: TextStyle(
                     color: AppColors.textSecondary(context),
                     fontSize: 12,
@@ -107,7 +108,7 @@ class PrsTile extends StatelessWidget {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 12,
-                                        color: AppColors.accent,
+                                        color: AppColors.accentOf(context),
                                       ),
                                     ),
                                   ],
@@ -124,7 +125,7 @@ class PrsTile extends StatelessWidget {
         return HomeTileNumber(
           value: '$count',
           title: name,
-          subtitle: hasData ? 'Personal records' : 'Not logged',
+          subtitle: hasData ? 'Personal records' : context.l10n.widgetNotLogged,
         );
       },
     );

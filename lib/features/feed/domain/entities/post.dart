@@ -11,6 +11,7 @@ class Post {
     required this.likes,
     required this.comments,
     required this.createdAt,
+    this.username = '',
     this.isPublic = true,
     this.volume = 0,
   });
@@ -18,6 +19,7 @@ class Post {
   final String id;
   final String userId;
   final String userName;
+  final String username;
   final String userPhotoUrl;
   final String caption;
   final String imageUrl;
@@ -27,12 +29,19 @@ class Post {
   final bool isPublic;
   final int volume;
 
+  String get displayHandle {
+    final u = username.trim();
+    if (u.isNotEmpty) return u.startsWith('@') ? u : '@$u';
+    return userName.isNotEmpty ? userName : 'User';
+  }
+
   factory Post.fromMap(String id, Map<String, dynamic> map) {
     final createdAt = map['createdAt'];
     return Post(
       id: id,
       userId: map['userId'] as String? ?? '',
       userName: map['userName'] as String? ?? 'User',
+      username: map['username'] as String? ?? '',
       userPhotoUrl: map['userPhotoUrl'] as String? ?? '',
       caption: map['caption'] as String? ?? '',
       imageUrl: map['imageUrl'] as String? ?? '',

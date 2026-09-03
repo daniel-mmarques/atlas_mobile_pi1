@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -46,9 +47,10 @@ class _NewCommunityPageState extends State<NewCommunityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nova comunidade'),
+        title: Text(l10n.messagesNewCommunity),
         centerTitle: true,
       ),
       body: Padding(
@@ -58,16 +60,16 @@ class _NewCommunityPageState extends State<NewCommunityPage> {
             TextField(
               controller: _controller,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Nome da comunidade',
-                hintText: 'Ex.: Treinos manhã',
+              decoration: InputDecoration(
+                labelText: l10n.messagesNewCommunity,
+                hintText: l10n.workoutsFolderHint,
               ),
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _create(),
             ),
             const SizedBox(height: AppSpacing.xxl),
             AppActionButton(
-              label: _saving ? 'Criando...' : 'Criar',
+              label: _saving ? l10n.saving : l10n.continueAction,
               emphasized: true,
               borderRadius: AppRadii.pill,
               onTap: _saving ? null : _create,

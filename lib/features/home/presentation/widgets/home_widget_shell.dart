@@ -1,7 +1,11 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/ui/components/app_card.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:flutter/material.dart';
 
 class HomeWidgetShell extends StatelessWidget {
@@ -23,64 +27,52 @@ class HomeWidgetShell extends StatelessWidget {
   final VoidCallback? onEditName;
 
   Future<void> _showMenu(BuildContext context) async {
-    final action = await showModalBottomSheet<String>(
+    final l10n = context.l10n;
+    final action = await showAtlasSheet<String>(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      isScrollControlled: false,
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sheetPaddingH,
+              0,
+              AppSpacing.sheetPaddingH,
+              AppSpacing.sheetPaddingB,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border(ctx).withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const AtlasSheetHandle(),
+                const SizedBox(height: AppSpacing.sectionGap),
                 Text(
                   instance.name,
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: AppTypography.sectionTitle(ctx),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   instance.size.layoutTitle,
-                  style: TextStyle(
-                    color: AppColors.textSecondary(ctx),
-                    fontSize: 13,
-                  ),
+                  style: AppTypography.meta(ctx),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 if (onEditName != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.edit_outlined),
-                    title: const Text('Renomear'),
+                    title: Text(l10n.widgetRename),
                     onTap: () => Navigator.pop(ctx, 'name'),
                   ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.palette_outlined),
-                  title: const Text('Alterar estilo'),
+                  title: Text(l10n.widgetChangeStyle),
                   onTap: () => Navigator.pop(ctx, 'style'),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.aspect_ratio_rounded),
-                  title: const Text('Alterar tamanho'),
+                  title: Text(l10n.widgetChangeSize),
                   onTap: () => Navigator.pop(ctx, 'size'),
                 ),
                 ListTile(
@@ -90,7 +82,7 @@ class HomeWidgetShell extends StatelessWidget {
                     color: Theme.of(ctx).colorScheme.error,
                   ),
                   title: Text(
-                    'Remover',
+                    l10n.delete,
                     style: TextStyle(color: Theme.of(ctx).colorScheme.error),
                   ),
                   onTap: () => Navigator.pop(ctx, 'remove'),
@@ -127,11 +119,14 @@ class HomeWidgetShell extends StatelessWidget {
             child: IconButton(
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(
+                minWidth: AppSpacing.minTouch,
+                minHeight: AppSpacing.minTouch,
+              ),
               onPressed: () => _showMenu(context),
               icon: Icon(
                 Icons.tune_rounded,
-                size: 18,
+                size: AppSpacing.iconSm,
                 color: AppColors.textSecondary(context),
               ),
             ),

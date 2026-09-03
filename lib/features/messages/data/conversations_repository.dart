@@ -13,7 +13,10 @@ abstract class ConversationsRepository {
 
   Stream<List<Conversation>> watchInbox(String userId);
 
-  Stream<List<ChatMessage>> watchMessages(String conversationId);
+  Stream<List<ChatMessage>> watchMessages(
+    String conversationId, {
+    int limit = 100,
+  });
 
   Future<void> sendMessage({
     required String conversationId,
@@ -58,7 +61,7 @@ abstract class ConversationsRepository {
 
 class ConversationsRepositoryImpl implements ConversationsRepository {
   ConversationsRepositoryImpl({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+    : _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
   static const _uuid = Uuid();
@@ -98,6 +101,8 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     });
   }
 
+  Conversation? _cachedGeneral;
+
   @override
   Stream<List<Conversation>> watchInbox(String userId) {
     return _conversations
@@ -105,38 +110,58 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
         .orderBy('updatedAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
-      await ensureGeneralConversation();
+          final list = snapshot.docs
+              .map((doc) => Conversation.fromMap(doc.id, doc.data(), userId))
+              .where((c) => c.type != ConversationType.general)
+              .toList();
+
+          final general = await _loadGeneralConversation(userId);
+          return [general, ...list];
+        });
+  }
+
+  Future<Conversation> _loadGeneralConversation(String userId) async {
+    if (_cachedGeneral != null) return _cachedGeneral!;
+    try {
       final generalSnap = await _conversations.doc(generalId).get();
-      final list = snapshot.docs
-          .map((doc) => Conversation.fromMap(doc.id, doc.data(), userId))
-          .where((c) => c.type != ConversationType.general)
-          .toList();
-
-      final general = generalSnap.exists && generalSnap.data() != null
-          ? Conversation.fromMap(generalId, generalSnap.data()!, userId)
-          : Conversation.generalPlaceholder();
-
-      return [general, ...list];
-    });
+      if (generalSnap.exists && generalSnap.data() != null) {
+        _cachedGeneral = Conversation.fromMap(
+          generalId,
+          generalSnap.data()!,
+          userId,
+        );
+        return _cachedGeneral!;
+      }
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+    }
+    _cachedGeneral = Conversation.generalPlaceholder();
+    return _cachedGeneral!;
   }
 
   @override
-  Stream<List<ChatMessage>> watchMessages(String conversationId) {
-    final query = _messages(conversationId).orderBy('createdAt', descending: false);
-
-    return query.snapshots().map((snapshot) {
-      final now = DateTime.now();
-      return snapshot.docs
-          .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
-          .where((m) {
-            if (m.expiresAt != null) return m.expiresAt!.isAfter(now);
-            if (conversationId == generalId) {
-              return now.difference(m.createdAt) < generalTtl;
-            }
-            return true;
-          })
-          .toList();
-    });
+  Stream<List<ChatMessage>> watchMessages(
+    String conversationId, {
+    int limit = 100,
+  }) {
+    return _messages(conversationId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+          final now = DateTime.now();
+          final messages = snapshot.docs
+              .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
+              .where((m) {
+                if (m.expiresAt != null) return m.expiresAt!.isAfter(now);
+                if (conversationId == generalId) {
+                  return now.difference(m.createdAt) < generalTtl;
+                }
+                return true;
+              })
+              .toList();
+          return messages.reversed.toList();
+        });
   }
 
   @override
@@ -162,19 +187,23 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     }
 
     await _messages(conversationId).add(data);
-    await _conversations.doc(conversationId).set(
-      {
-        'lastMessage': trimmed,
-        'lastSenderName': senderName,
-        'updatedAt': Timestamp.fromDate(now),
-      },
-      SetOptions(merge: true),
-    );
+    await _conversations.doc(conversationId).set({
+      'lastMessage': trimmed,
+      'lastSenderName': senderName,
+      'updatedAt': Timestamp.fromDate(now),
+    }, SetOptions(merge: true));
 
     if (isGeneral) {
       unawaited(purgeExpiredGeneralMessages());
     }
   }
+
+  Map<String, dynamic> _participantMap(AppUser user) => {
+    'userId': user.id,
+    'name': user.name ?? user.email,
+    'username': user.username ?? '',
+    'photoUrl': '',
+  };
 
   @override
   Future<Conversation> getOrCreateDm({
@@ -184,22 +213,20 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     final ids = [me.id, other.id]..sort();
     final id = 'dm_${ids[0]}_${ids[1]}';
     final doc = _conversations.doc(id);
-    final snap = await doc.get();
-    if (!snap.exists) {
-      await doc.set({
-        'type': ConversationType.dm.storageName,
-        'title': '',
-        'participantIds': [me.id, other.id],
-        'participants': [
-          {'userId': me.id, 'name': me.name ?? me.email, 'photoUrl': ''},
-          {'userId': other.id, 'name': other.name ?? other.email, 'photoUrl': ''},
-        ],
-        'lastMessage': '',
-        'lastSenderName': '',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'createdBy': me.id,
-      });
-    }
+    final existing = await _tryGetConversation(doc, viewerId: me.id);
+    if (existing != null) return existing;
+
+    await doc.set({
+      'type': ConversationType.dm.storageName,
+      'title': '',
+      'participantIds': [me.id, other.id],
+      'participants': [_participantMap(me), _participantMap(other)],
+      'lastMessage': '',
+      'lastSenderName': '',
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdBy': me.id,
+    }, SetOptions(merge: true));
+
     final fresh = await doc.get();
     return Conversation.fromMap(id, fresh.data()!, me.id);
   }
@@ -212,32 +239,37 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     final ids = [coach.id, student.id]..sort();
     final id = 'coach_${ids[0]}_${ids[1]}';
     final doc = _conversations.doc(id);
-    final snap = await doc.get();
-    if (!snap.exists) {
-      await doc.set({
-        'type': ConversationType.coach.storageName,
-        'title': '',
-        'participantIds': [coach.id, student.id],
-        'participants': [
-          {
-            'userId': coach.id,
-            'name': coach.name ?? coach.email,
-            'photoUrl': '',
-          },
-          {
-            'userId': student.id,
-            'name': student.name ?? student.email,
-            'photoUrl': '',
-          },
-        ],
-        'lastMessage': '',
-        'lastSenderName': '',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'createdBy': coach.id,
-      });
-    }
+    final existing = await _tryGetConversation(doc, viewerId: coach.id);
+    if (existing != null) return existing;
+
+    await doc.set({
+      'type': ConversationType.coach.storageName,
+      'title': '',
+      'participantIds': [coach.id, student.id],
+      'participants': [_participantMap(coach), _participantMap(student)],
+      'lastMessage': '',
+      'lastSenderName': '',
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdBy': coach.id,
+    }, SetOptions(merge: true));
+
     final fresh = await doc.get();
     return Conversation.fromMap(id, fresh.data()!, coach.id);
+  }
+
+  /// Missing conversation docs can fail rules that touch [resource.data].
+  Future<Conversation?> _tryGetConversation(
+    DocumentReference<Map<String, dynamic>> doc, {
+    required String viewerId,
+  }) async {
+    try {
+      final snap = await doc.get();
+      if (!snap.exists || snap.data() == null) return null;
+      return Conversation.fromMap(doc.id, snap.data()!, viewerId);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
   }
 
   @override
@@ -253,13 +285,7 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
       'title': title,
       'titleLower': title.toLowerCase(),
       'participantIds': [creator.id],
-      'participants': [
-        {
-          'userId': creator.id,
-          'name': creator.name ?? creator.email,
-          'photoUrl': '',
-        },
-      ],
+      'participants': [_participantMap(creator)],
       'lastMessage': '',
       'lastSenderName': '',
       'updatedAt': FieldValue.serverTimestamp(),
@@ -286,18 +312,14 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
       throw StateError('Não é uma comunidade');
     }
 
-    final participantIds =
-        (data['participantIds'] as List<dynamic>? ?? []).cast<String>();
+    final participantIds = (data['participantIds'] as List<dynamic>? ?? [])
+        .cast<String>();
     if (!participantIds.contains(user.id)) {
       final participants = (data['participants'] as List<dynamic>? ?? [])
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      participants.add({
-        'userId': user.id,
-        'name': user.name ?? user.email,
-        'photoUrl': '',
-      });
+      participants.add(_participantMap(user));
       await doc.update({
         'participantIds': FieldValue.arrayUnion([user.id]),
         'participants': participants,
@@ -333,20 +355,32 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     String query, {
     String? excludeUid,
   }) async {
-    final q = query.trim().toLowerCase();
+    var q = query.trim().toLowerCase();
+    if (q.startsWith('@')) q = q.substring(1);
     if (q.isEmpty) return [];
 
     final end = '$q\uf8ff';
-    final snap = await _users
+    final byUsername = await _users
+        .where('usernameLower', isGreaterThanOrEqualTo: q)
+        .where('usernameLower', isLessThanOrEqualTo: end)
+        .limit(20)
+        .get();
+
+    final byName = await _users
         .where('nameLower', isGreaterThanOrEqualTo: q)
         .where('nameLower', isLessThanOrEqualTo: end)
         .limit(20)
         .get();
 
-    return snap.docs
-        .map((doc) => AppUser.fromMap(doc.id, doc.data()))
-        .where((u) => excludeUid == null || u.id != excludeUid)
-        .toList();
+    final seen = <String>{};
+    final results = <AppUser>[];
+    for (final doc in [...byUsername.docs, ...byName.docs]) {
+      if (!seen.add(doc.id)) continue;
+      final user = AppUser.fromMap(doc.id, doc.data());
+      if (excludeUid != null && user.id == excludeUid) continue;
+      results.add(user);
+    }
+    return results;
   }
 
   @override
@@ -369,10 +403,9 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
   @override
   Future<void> purgeExpiredGeneralMessages() async {
     final cutoff = Timestamp.fromDate(DateTime.now().subtract(generalTtl));
-    final old = await _messages(generalId)
-        .where('createdAt', isLessThan: cutoff)
-        .limit(50)
-        .get();
+    final old = await _messages(
+      generalId,
+    ).where('createdAt', isLessThan: cutoff).limit(50).get();
     for (final doc in old.docs) {
       await doc.reference.delete();
     }

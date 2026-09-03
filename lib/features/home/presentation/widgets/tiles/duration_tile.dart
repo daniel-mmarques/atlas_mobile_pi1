@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/tiles/home_widget_tile.dart';
 import 'package:atlas_mobile_pi1/features/metrics/workout_metrics.dart';
@@ -36,7 +37,7 @@ class DurationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Workout>>(
-      stream: context.read<WorkoutService>().watchUserWorkouts(userId),
+      stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
         final workouts = snapshot.data ?? const <Workout>[];
         final minutes = WorkoutMetrics.avgDurationMinutes(workouts);
@@ -45,7 +46,7 @@ class DurationTile extends StatelessWidget {
           value: _format(minutes),
           unit: _unit(minutes),
           title: name,
-          subtitle: hasData ? 'Average session' : 'Not logged',
+          subtitle: hasData ? 'Average session' : context.l10n.widgetNotLogged,
         );
       },
     );

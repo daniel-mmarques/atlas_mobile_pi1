@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/feed/domain/entities/post.dart';
@@ -12,6 +13,8 @@ class FeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toString();
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -20,16 +23,24 @@ class FeedCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 25,
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppColors.accentOf(context),
                 backgroundImage: post.userPhotoUrl.isNotEmpty
-                    ? NetworkImage(post.userPhotoUrl)
+                    ? ResizeImage(
+                        NetworkImage(post.userPhotoUrl),
+                        width: 100,
+                        height: 100,
+                      )
                     : null,
                 child: post.userPhotoUrl.isEmpty
                     ? Text(
-                        post.userName.isNotEmpty
-                            ? post.userName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(color: Colors.white),
+                        () {
+                          final label =
+                              post.displayHandle.replaceFirst('@', '');
+                          return label.isNotEmpty
+                              ? label[0].toUpperCase()
+                              : '?';
+                        }(),
+                        style: TextStyle(color: AppColors.onAccentOf(context)),
                       )
                     : null,
               ),
@@ -39,7 +50,7 @@ class FeedCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post.userName,
+                      post.displayHandle,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
@@ -48,7 +59,8 @@ class FeedCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      DateFormat('dd/MM/yyyy HH:mm').format(post.createdAt),
+                      DateFormat('dd/MM/yyyy HH:mm', locale)
+                          .format(post.createdAt),
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -79,7 +91,7 @@ class FeedCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Volume',
+                      l10n.workoutsVolume,
                       style: TextStyle(
                         color: AppColors.textPrimary(context),
                         fontSize: 13,
@@ -87,7 +99,7 @@ class FeedCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${post.volume} kg',
+                      '${post.volume} ${l10n.commonKg}',
                       style: TextStyle(
                         color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.w600,
@@ -100,7 +112,7 @@ class FeedCard extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'See all exercises',
+            l10n.seeAllExercises,
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary(context),
@@ -121,7 +133,7 @@ class FeedCard extends StatelessWidget {
               IconButton(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Comentários em breve')),
+                    SnackBar(content: Text(l10n.feedCommentsSoon)),
                   );
                 },
                 icon: const Icon(Icons.chat_bubble_outline, size: 22),

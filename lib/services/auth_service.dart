@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:atlas_mobile_pi1/core/errors/auth_exception.dart';
+import 'package:atlas_mobile_pi1/data/datasources/local/preferences/repository_preferences.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/repositories/user_repository.dart';
+import 'package:atlas_mobile_pi1/l10n/app_localizations.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
@@ -124,9 +126,7 @@ class AuthService extends ChangeNotifier {
       throw _mapAuthError(e);
     } catch (_) {
       pendingProfileSetup = false;
-      throw AuthException(
-        'Não foi possível concluir o cadastro. Tente novamente.',
-      );
+      throw AuthException(_l10n.authGenericError);
     }
   }
 
@@ -150,9 +150,7 @@ class AuthService extends ChangeNotifier {
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     } catch (_) {
-      throw AuthException(
-        'Não foi possível fazer login. Verifique sua conexão e tente novamente.',
-      );
+      throw AuthException(_l10n.authGenericError);
     }
   }
 
@@ -168,9 +166,7 @@ class AuthService extends ChangeNotifier {
       final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) {
-        throw AuthException(
-          'Não foi possível obter credenciais do Google. Verifique o SHA-1 no Firebase.',
-        );
+        throw AuthException(_l10n.authGoogleFailed);
       }
 
       final credential = firebase_auth.GoogleAuthProvider.credential(
@@ -179,7 +175,7 @@ class AuthService extends ChangeNotifier {
       final cred = await _auth.signInWithCredential(credential);
       final firebaseUser = cred.user;
       if (firebaseUser == null) {
-        throw AuthException('Falha no login com Google.');
+        throw AuthException(_l10n.authGoogleFailed);
       }
 
       await _ensureFirestoreProfile(
@@ -196,11 +192,9 @@ class AuthService extends ChangeNotifier {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         return;
       }
-      throw AuthException('Login com Google cancelado ou indisponível.');
+      throw AuthException(_l10n.authGoogleCancelled);
     } catch (_) {
-      throw AuthException(
-        'Não foi possível entrar com Google. Ative o provedor no Firebase e confira o SHA-1.',
-      );
+      throw AuthException(_l10n.authGoogleFailed);
     }
   }
 
@@ -219,7 +213,7 @@ class AuthService extends ChangeNotifier {
 
       final idToken = appleCredential.identityToken;
       if (idToken == null) {
-        throw AuthException('Não foi possível obter o token da Apple.');
+        throw AuthException(_l10n.authAppleTokenFailed);
       }
 
       final oauthCredential = firebase_auth.OAuthProvider('apple.com').credential(
@@ -230,7 +224,7 @@ class AuthService extends ChangeNotifier {
       final cred = await _auth.signInWithCredential(oauthCredential);
       final firebaseUser = cred.user;
       if (firebaseUser == null) {
-        throw AuthException('Falha no login com Apple.');
+        throw AuthException(_l10n.authAppleFailed);
       }
 
       final fullName = [
@@ -250,7 +244,7 @@ class AuthService extends ChangeNotifier {
       if (e.code == AuthorizationErrorCode.canceled) {
         return;
       }
-      throw AuthException('Login com Apple indisponível neste dispositivo.');
+      throw AuthException(_l10n.authAppleUnavailable);
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     } catch (_) {
@@ -292,34 +286,34 @@ class AuthService extends ChangeNotifier {
     return digest.toString();
   }
 
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(PreferencesRepository.instance.getUserLanguage());
+
   AuthException _mapAuthError(firebase_auth.FirebaseAuthException e) {
+    final l10n = _l10n;
     switch (e.code) {
       case 'weak-password':
-        return AuthException('A senha é muito fraca!');
+        return AuthException(l10n.authWeakPassword);
       case 'email-already-in-use':
-        return AuthException('Este email já está cadastrado');
+        return AuthException(l10n.authEmailInUse);
       case 'user-not-found':
-        return AuthException('Email não encontrado. Cadastre-se.');
+        return AuthException(l10n.authUserNotFound);
       case 'wrong-password':
-        return AuthException('Senha incorreta. Tente novamente');
+        return AuthException(l10n.authWrongPassword);
       case 'invalid-credential':
-        return AuthException('Email ou senha incorretos.');
+        return AuthException(l10n.authInvalidCredential);
       case 'invalid-email':
-        return AuthException('Email inválido');
+        return AuthException(l10n.authInvalidEmail);
       case 'user-disabled':
-        return AuthException('Esta conta foi desabilitada.');
+        return AuthException(l10n.authUserDisabled);
       case 'too-many-requests':
-        return AuthException('Muitas tentativas. Tente mais tarde.');
+        return AuthException(l10n.authTooManyRequests);
       case 'network-request-failed':
-        return AuthException(
-          'Sem conexão com a internet. Verifique sua rede e tente novamente.',
-        );
+        return AuthException(l10n.authNetworkFailed);
       case 'account-exists-with-different-credential':
-        return AuthException(
-          'Já existe uma conta com este email usando outro método de login.',
-        );
+        return AuthException(l10n.authAccountExistsDifferent);
       default:
-        return AuthException('Erro de autenticação. Tente novamente.');
+        return AuthException(l10n.authGenericError);
     }
   }
 

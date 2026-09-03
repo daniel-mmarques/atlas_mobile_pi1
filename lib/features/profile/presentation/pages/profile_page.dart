@@ -1,38 +1,33 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
-import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/metrics/workout_metrics.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:atlas_mobile_pi1/ui/components/platinum_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 Future<void> showProfileSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showAtlasSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (_) {
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.95,
-        minChildSize: 0.95,
-        maxChildSize: 0.95,
+        initialChildSize: AppSpacing.sheetInitial,
+        minChildSize: AppSpacing.sheetMin,
+        maxChildSize: AppSpacing.sheetMax,
+        shouldCloseOnMinExtent: true,
         builder: (_, scrollController) {
           return ProfileContent(
             scrollController: scrollController,
             showHandle: true,
-            asSheet: true,
           );
         },
       );
@@ -40,32 +35,19 @@ Future<void> showProfileSheet(BuildContext context) {
   );
 }
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(child: ProfileContent(asSheet: false)),
-    );
-  }
-}
-
 class ProfileContent extends StatelessWidget {
   const ProfileContent({
     super.key,
     this.scrollController,
     this.showHandle = false,
-    this.asSheet = false,
   });
 
   final ScrollController? scrollController;
   final bool showHandle;
-  final bool asSheet;
 
   void _openRoute(BuildContext context, String route) {
     final router = GoRouter.of(context);
-    if (asSheet) Navigator.pop(context);
+    Navigator.pop(context);
     router.push(route);
   }
 
@@ -74,56 +56,73 @@ class ProfileContent extends StatelessWidget {
     final auth = context.watch<AuthService>();
     final user = auth.appUser;
     final uid = auth.user?.uid;
-    final name = user?.name?.isNotEmpty == true ? user!.name! : 'user';
+    final l10n = context.l10n;
+    final title = user?.username?.isNotEmpty == true
+        ? user!.handle
+        : (user?.name?.isNotEmpty == true ? user!.name! : 'user');
 
     return Column(
       children: [
-        if (showHandle) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor,
-              borderRadius: AppRadii.pill,
-            ),
-          ),
-        ],
+        if (showHandle) const AtlasSheetHandle(),
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.pageHorizontal,
-            AppSpacing.md,
-            AppSpacing.pageHorizontal,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sectionGap,
+            AppSpacing.sheetPaddingH,
             AppSpacing.sm,
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: Text(name, style: AppTypography.pageTitle(context)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(title, style: AppTypography.sheetTitle(context)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  AtlasSheetNavIcon(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    isDismiss: true,
+                  ),
+                ],
               ),
-              if (auth.isCoach)
-                AppIconButton(
-                  icon: Icons.people_rounded,
-                  onPressed: () => _openRoute(context, AppRoutes.coach),
-                  size: 40,
-                  iconSize: 20,
-                ),
-              if (auth.isCoach) const SizedBox(width: AppSpacing.sm),
-              AppIconButton(
-                icon: Icons.qr_code_rounded,
-                onPressed: () => _openRoute(context, AppRoutes.profileShare),
-                size: 40,
-                iconSize: 20,
+              if (user?.username?.isNotEmpty == true &&
+                  user?.name?.isNotEmpty == true) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(user!.name!, style: AppTypography.meta(context)),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (auth.isCoach) ...[
+                    AppIconButton(
+                      icon: Icons.people_rounded,
+                      onPressed: () => _openRoute(context, AppRoutes.coach),
+                      iconSize: AppSpacing.iconMd,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  AppIconButton(
+                    icon: Icons.qr_code_rounded,
+                    onPressed: () =>
+                        _openRoute(context, AppRoutes.profileShare),
+                    iconSize: AppSpacing.iconMd,
+                  ),
+                ],
               ),
             ],
           ),
         ),
         Expanded(
           child: uid == null
-              ? const Center(child: Text('Não autenticado'))
+              ? Center(child: Text(l10n.notAuthenticated))
               : StreamBuilder<List<Workout>>(
                   stream:
-                      context.read<WorkoutService>().watchUserWorkouts(uid),
+                      context
+                          .read<WorkoutService>()
+                          .watchUserWorkouts(uid, limit: WorkoutService.profileLimit),
                   builder: (context, snapshot) {
                     final workouts = snapshot.data ?? [];
                     final finished =
@@ -138,23 +137,25 @@ class ProfileContent extends StatelessWidget {
 
                     return ListView(
                       controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.pageHorizontal,
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.sheetPaddingH,
                         AppSpacing.md,
-                        AppSpacing.pageHorizontal,
-                        AppSpacing.xxxl,
+                        AppSpacing.sheetPaddingH,
+                        AppSpacing.sheetPaddingB,
                       ),
                       children: [
                         Row(
                           children: [
                             CircleAvatar(
                               radius: 36,
-                              backgroundColor: AppColors.accent,
+                              backgroundColor: AppColors.accentOf(context),
                               child: Text(
-                                name[0].toUpperCase(),
-                                style: const TextStyle(
+                                title.replaceFirst('@', '').isNotEmpty
+                                    ? title.replaceFirst('@', '')[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
                                   fontSize: 28,
-                                  color: Colors.white,
+                                  color: AppColors.onAccentOf(context),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -167,10 +168,10 @@ class ProfileContent extends StatelessWidget {
                                 children: [
                                   _Stat(
                                     value: '${finished.length}',
-                                    label: 'Workouts',
+                                    label: l10n.profileWorkouts,
                                   ),
-                                  const _Stat(value: '0', label: 'Followers'),
-                                  const _Stat(value: '0', label: 'Following'),
+                                  _Stat(value: '0', label: l10n.profileFollowers),
+                                  _Stat(value: '0', label: l10n.profileFollowing),
                                 ],
                               ),
                             ),
@@ -178,7 +179,7 @@ class ProfileContent extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         Text(
-                          'Weekly volume',
+                          l10n.widgetVolumeSubtitle,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -200,7 +201,7 @@ class ProfileContent extends StatelessWidget {
                                     height: h,
                                     decoration: BoxDecoration(
                                       color: v > 0
-                                          ? AppColors.accent
+                                          ? AppColors.accentOf(context)
                                           : AppColors.component(context),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -248,7 +249,7 @@ class ProfileContent extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      'Workouts this week',
+                                      l10n.calendarThisWeek,
                                       style: TextStyle(
                                         color: AppColors.textSecondary(context),
                                       ),
@@ -265,13 +266,13 @@ class ProfileContent extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
-                          'Recent',
+                          l10n.profileRecent,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: AppSpacing.md),
                         if (finished.isEmpty)
                           Text(
-                            'Nenhum treino finalizado.',
+                            l10n.workoutsNoRoutines,
                             style: TextStyle(
                               color: AppColors.textSecondary(context),
                             ),
@@ -282,12 +283,12 @@ class ProfileContent extends StatelessWidget {
                                   contentPadding: EdgeInsets.zero,
                                   title: Text(w.name),
                                   subtitle: Text(
-                                    '${w.volume} kg · ${w.formattedDuration}',
+                                    '${w.volume} ${l10n.commonKg} · ${w.formattedDuration}',
                                   ),
                                   trailing:
                                       const Icon(Icons.chevron_right_rounded),
                                   onTap: () {
-                                    if (asSheet) Navigator.pop(context);
+                                    Navigator.pop(context);
                                     context.push(
                                       AppRoutes.workoutDetails(w.id),
                                       extra: w,

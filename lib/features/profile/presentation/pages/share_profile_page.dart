@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -53,9 +54,8 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final uid = auth.user?.uid;
-    final username = auth.appUser?.name?.isNotEmpty == true
-        ? auth.appUser!.name!
-        : 'user';
+    final handle = auth.appUser?.handle ?? '@user';
+    final l10n = context.l10n;
 
     final payload = _chatMode
         ? (uid == null ? null : 'atlas://user?uid=$uid')
@@ -63,7 +63,7 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('_$username'),
+        title: Text(handle),
         centerTitle: true,
         actions: [
           PlatinumIconButton(
@@ -78,9 +78,9 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
           child: Column(
             children: [
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: true, label: Text('Chat')),
-                  ButtonSegment(value: false, label: Text('Coach')),
+                segments: [
+                  ButtonSegment(value: true, label: Text(l10n.chatTitle)),
+                  ButtonSegment(value: false, label: Text(l10n.coachTitle)),
                 ],
                 selected: {_chatMode},
                 onSelectionChanged: (value) {
@@ -113,7 +113,7 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
                           )
                         : Center(
                             child: Text(
-                              'Não foi possível gerar o QR',
+                              l10n.errorGeneric,
                               style: TextStyle(
                                 color: AppColors.textSecondary(context),
                               ),
@@ -122,13 +122,13 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
               ),
               const Spacer(),
               AppActionButton(
-                label: 'Copy Link',
+                label: l10n.copyLink,
                 emphasized: true,
                 onTap: () {
                   if (payload == null) return;
                   Clipboard.setData(ClipboardData(text: payload));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Link copiado')),
+                    SnackBar(content: Text(l10n.linkCopied)),
                   );
                 },
               ),
@@ -136,7 +136,7 @@ class _ShareProfilePageState extends State<ShareProfilePage> {
                 const SizedBox(height: AppSpacing.sm),
                 TextButton(
                   onPressed: _loading ? null : _generateCoachLink,
-                  child: const Text('Gerar novo QR coach'),
+                  child: Text(l10n.coachGenerateNewQr),
                 ),
               ],
             ],

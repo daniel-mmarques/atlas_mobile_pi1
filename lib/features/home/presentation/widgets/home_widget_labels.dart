@@ -1,37 +1,38 @@
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
+import 'package:atlas_mobile_pi1/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 extension HomeWidgetTypeUi on HomeWidgetType {
-  String get label => switch (this) {
-        HomeWidgetType.streak => 'Streak',
-        HomeWidgetType.weeklyVolume => 'Volume',
-        HomeWidgetType.frequency => 'Frequência',
-        HomeWidgetType.personalRecords => 'PRs',
-        HomeWidgetType.avgDuration => 'Duração',
+  String label(AppLocalizations l10n) => switch (this) {
+        HomeWidgetType.streak => l10n.widgetStreak,
+        HomeWidgetType.weeklyVolume => l10n.widgetVolume,
+        HomeWidgetType.frequency => l10n.widgetFrequency,
+        HomeWidgetType.personalRecords => l10n.widgetPrs,
+        HomeWidgetType.avgDuration => l10n.widgetDuration,
       };
 
-  String get subtitle => switch (this) {
-        HomeWidgetType.streak => 'Dias consecutivos treinado',
-        HomeWidgetType.weeklyVolume => 'Volume total por semana',
-        HomeWidgetType.frequency => 'Treinos na semana e no mês',
-        HomeWidgetType.personalRecords => 'Melhores cargas recentes',
-        HomeWidgetType.avgDuration => 'Tempo médio por treino',
+  String subtitle(AppLocalizations l10n) => switch (this) {
+        HomeWidgetType.streak => l10n.widgetStreakSubtitle,
+        HomeWidgetType.weeklyVolume => l10n.widgetVolumeSubtitle,
+        HomeWidgetType.frequency => l10n.widgetFrequencySubtitle,
+        HomeWidgetType.personalRecords => l10n.widgetPrsSubtitle,
+        HomeWidgetType.avgDuration => l10n.widgetDurationSubtitle,
       };
 
-  String get sheetFooterTitle => switch (this) {
-        HomeWidgetType.streak => 'Add a streak to your dashboard',
-        HomeWidgetType.weeklyVolume => 'Add weekly volume to your dashboard',
-        HomeWidgetType.frequency => 'Add frequency to your dashboard',
-        HomeWidgetType.personalRecords => 'Add PRs to your dashboard',
-        HomeWidgetType.avgDuration => 'Add duration to your dashboard',
+  String sheetFooterTitle(AppLocalizations l10n) => switch (this) {
+        HomeWidgetType.streak => l10n.widgetAddStreak,
+        HomeWidgetType.weeklyVolume => l10n.widgetAddVolume,
+        HomeWidgetType.frequency => l10n.widgetAddFrequency,
+        HomeWidgetType.personalRecords => l10n.widgetAddPrs,
+        HomeWidgetType.avgDuration => l10n.widgetAddDuration,
       };
 
-  String get sheetFooterSubtitle => switch (this) {
-        HomeWidgetType.streak => 'Track how consistent you stay.',
-        HomeWidgetType.weeklyVolume => 'See how much work you put in.',
-        HomeWidgetType.frequency => 'Follow how often you train.',
-        HomeWidgetType.personalRecords => 'Celebrate your best lifts.',
-        HomeWidgetType.avgDuration => 'Know how long sessions last.',
+  String sheetFooterSubtitle(AppLocalizations l10n) => switch (this) {
+        HomeWidgetType.streak => l10n.widgetTrackStreak,
+        HomeWidgetType.weeklyVolume => l10n.widgetTrackVolume,
+        HomeWidgetType.frequency => l10n.widgetTrackFrequency,
+        HomeWidgetType.personalRecords => l10n.widgetTrackPrs,
+        HomeWidgetType.avgDuration => l10n.widgetTrackDuration,
       };
 
   IconData get icon => switch (this) {
@@ -42,23 +43,23 @@ extension HomeWidgetTypeUi on HomeWidgetType {
         HomeWidgetType.avgDuration => Icons.timer_outlined,
       };
 
-  String get previewValue => switch (this) {
+  String previewValue(AppLocalizations l10n) => switch (this) {
         HomeWidgetType.streak => '0',
-        HomeWidgetType.weeklyVolume => '0 kg',
+        HomeWidgetType.weeklyVolume => '0 ${l10n.commonKg}',
         HomeWidgetType.frequency => '0',
         HomeWidgetType.personalRecords => '0',
-        HomeWidgetType.avgDuration => '0 min',
+        HomeWidgetType.avgDuration => '0 ${l10n.commonMin}',
       };
 
-  String get emptyStatus => 'Not logged';
+  String emptyStatus(AppLocalizations l10n) => l10n.widgetNotLogged;
 }
 
 extension HomeWidgetStyleUi on HomeWidgetStyle {
-  String get label => switch (this) {
-        HomeWidgetStyle.number => 'Número',
-        HomeWidgetStyle.chart => 'Gráfico',
-        HomeWidgetStyle.list => 'Lista',
-        HomeWidgetStyle.calendar => 'Calendário',
+  String label(AppLocalizations l10n) => switch (this) {
+        HomeWidgetStyle.number => l10n.widgetStyleNumber,
+        HomeWidgetStyle.chart => l10n.widgetStyleChart,
+        HomeWidgetStyle.list => l10n.widgetStyleList,
+        HomeWidgetStyle.calendar => l10n.widgetStyleCalendar,
       };
 
   IconData get icon => switch (this) {

@@ -46,7 +46,7 @@ Future<void> main() async {
         Provider<PostsRepository>.value(value: postsRepository),
         Provider<ConversationsRepository>.value(value: conversationsRepository),
         Provider<CoachRepository>.value(value: coachRepository),
-        ChangeNotifierProvider<WorkoutService>.value(value: workoutService),
+        Provider<WorkoutService>.value(value: workoutService),
         ChangeNotifierProvider<PreferencesService>.value(
           value: preferencesService,
         ),

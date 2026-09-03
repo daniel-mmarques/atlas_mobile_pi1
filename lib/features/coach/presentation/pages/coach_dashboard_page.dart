@@ -1,12 +1,12 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
 import 'package:atlas_mobile_pi1/features/coach/data/coach_repository.dart';
 import 'package:atlas_mobile_pi1/features/coach/domain/enums/coach_enums.dart';
-import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
-import 'package:atlas_mobile_pi1/services/workout_service.dart';
 import 'package:atlas_mobile_pi1/ui/components/app_action_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,15 +20,16 @@ class CoachDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final coachId = auth.user?.uid;
+    final l10n = context.l10n;
     if (coachId == null) {
-      return const Scaffold(body: Center(child: Text('Não autenticado')));
+      return Scaffold(body: Center(child: Text(l10n.notAuthenticated)));
     }
 
     final coachRepository = context.read<CoachRepository>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meus Alunos'),
+        title: Text(l10n.coachMyStudents),
         centerTitle: true,
         actions: [
           IconButton(
@@ -56,7 +57,7 @@ class CoachDashboardPage extends StatelessWidget {
                     const Icon(Icons.people_outline, size: 64),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'Nenhum aluno vinculado',
+                      l10n.coachNoStudents,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -68,10 +69,11 @@ class CoachDashboardPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxl),
-                    FilledButton.icon(
-                      onPressed: () => context.push(AppRoutes.coachLink),
-                      icon: const Icon(Icons.qr_code_2_rounded),
-                      label: const Text('Gerar QR Code'),
+                    AppActionButton(
+                      label: l10n.coachGenerateQr,
+                      icon: Icons.qr_code_2_rounded,
+                      emphasized: true,
+                      onTap: () => context.push(AppRoutes.coachLink),
                     ),
                   ],
                 ),
@@ -90,26 +92,27 @@ class CoachDashboardPage extends StatelessWidget {
                   : student.email;
               return ListTile(
                 tileColor: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.sm,
                 ),
                 leading: CircleAvatar(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: AppColors.accentOf(context),
                   child: Text(
                     label.isNotEmpty ? label[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.onAccentOf(context)),
                   ),
                 ),
                 title: Text(label),
-                subtitle: StreamBuilder<List<Workout>>(
-                  stream: context
-                      .read<WorkoutService>()
-                      .watchUserWorkouts(student.id),
+                subtitle: FutureBuilder<int>(
+                  future: coachRepository.countFinishedWorkouts(student.id),
                   builder: (context, workoutSnap) {
-                    final finished = (workoutSnap.data ?? [])
-                        .where((w) => w.finishedAt != null)
-                        .length;
-                    return Text('$finished treinos');
+                    final finished = workoutSnap.data ?? 0;
+                    if (workoutSnap.connectionState ==
+                            ConnectionState.waiting &&
+                        !workoutSnap.hasData) {
+                      return Text(student.displayLabel);
+                    }
+                    return Text(l10n.coachWorkoutsCount(finished));
                   },
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),
@@ -125,7 +128,7 @@ class CoachDashboardPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.coachLink),
         icon: const Icon(Icons.link_rounded),
-        label: const Text('Vincular aluno'),
+        label: Text(l10n.coachLinkStudent),
       ),
     );
   }
@@ -169,10 +172,11 @@ class _CoachLinkPageState extends State<CoachLinkPage> {
   @override
   Widget build(BuildContext context) {
     final payload = _token == null ? null : 'atlas://link?token=$_token';
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vincular aluno'),
+        title: Text(l10n.coachLinkStudent),
         centerTitle: true,
       ),
       body: Padding(
@@ -195,13 +199,13 @@ class _CoachLinkPageState extends State<CoachLinkPage> {
               ),
             const Spacer(),
             AppActionButton(
-              label: 'Abrir scanner',
+              label: l10n.coachOpenScanner,
               emphasized: true,
               onTap: () => context.push(AppRoutes.coachScan),
             ),
             TextButton(
               onPressed: _loading ? null : _generate,
-              child: const Text('Gerar novo'),
+              child: Text(l10n.coachGenerateNew),
             ),
           ],
         ),

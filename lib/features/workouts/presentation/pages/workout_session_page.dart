@@ -1,15 +1,20 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/feed/data/posts_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/data/seed_exercises.dart';
+import 'package:atlas_mobile_pi1/features/workouts/data/templates_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
+import 'package:atlas_mobile_pi1/features/workouts/domain/upsert_routine_from_workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/presentation/controllers/live_workout_controller.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
 import 'package:atlas_mobile_pi1/ui/components/app_action_button.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:atlas_mobile_pi1/ui/components/platinum_icon_button.dart';
 import 'package:atlas_mobile_pi1/ui/widgets/exercise_card.dart';
 import 'package:flutter/material.dart';
@@ -42,27 +47,27 @@ class _LiveWorkoutView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom + 120;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Treino', style: AppTypography.pageTitle(context)),
+        title: Text(l10n.addSheetWorkout, style: AppTypography.pageTitle(context)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: AppIconButton(
               icon: Icons.tune_rounded,
               onPressed: () {},
-              size: 40,
-              iconSize: 20,
+              iconSize: AppSpacing.iconMd,
             ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.pageHorizontal),
             child: SizedBox(
-              width: 96,
+              width: 110,
               child: AppActionButton(
-                label: 'Finalizar',
-                height: 40,
+                label: l10n.workoutsFinish,
+                height: AppSpacing.buttonHeight,
                 borderRadius: AppRadii.pill,
                 emphasized: true,
                 onTap: () => _finish(context),
@@ -95,7 +100,55 @@ class _LiveWorkoutView extends StatelessWidget {
 
   Future<void> _finish(BuildContext context) async {
     final controller = context.read<LiveWorkoutController>();
+    final templates = context.read<TemplatesRepository>();
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+
     await controller.finishWorkout();
+    if (!context.mounted) return;
+
+    final workout = controller.workout;
+    if (workout.exercises.isNotEmpty) {
+      final linkedId = workout.templateId;
+      if (linkedId != null && linkedId.isNotEmpty) {
+        await upsertRoutineFromWorkout(
+          workout: workout,
+          templates: templates,
+        );
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.routineUpdated)),
+        );
+      } else {
+        final shouldSave = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.routineSaveAsTitle),
+            content: Text(l10n.routineSaveAsBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(l10n.routineSaveAsConfirm),
+              ),
+            ],
+          ),
+        );
+        if (shouldSave == true) {
+          await upsertRoutineFromWorkout(
+            workout: workout,
+            templates: templates,
+            createIfMissing: true,
+          );
+          messenger.showSnackBar(
+            SnackBar(content: Text(l10n.routineSaved)),
+          );
+        }
+      }
+    }
+
     if (context.mounted) context.pop();
   }
 }
@@ -106,6 +159,7 @@ class _LiveWorkoutPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.read<LiveWorkoutController>();
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.lg),
@@ -120,7 +174,7 @@ class _LiveWorkoutPageHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text('Em andamento', style: AppTypography.meta(context)),
+          Text(l10n.workoutsInProgress, style: AppTypography.meta(context)),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
@@ -128,7 +182,7 @@ class _LiveWorkoutPageHeader extends StatelessWidget {
                 child: Selector<LiveWorkoutController, String>(
                   selector: (_, c) => c.totalVolume,
                   builder: (_, value, _) =>
-                      _StatChip(label: 'Volume', value: value),
+                      _StatChip(label: l10n.workoutsVolume, value: value),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -136,7 +190,7 @@ class _LiveWorkoutPageHeader extends StatelessWidget {
                 child: Selector<LiveWorkoutController, String>(
                   selector: (_, c) => c.totalSets,
                   builder: (_, value, _) =>
-                      _StatChip(label: 'Séries', value: value),
+                      _StatChip(label: l10n.workoutsSets, value: value),
                 ),
               ),
             ],
@@ -193,19 +247,50 @@ class _LiveWorkoutExerciseList extends StatelessWidget {
                 final controller = context.read<LiveWorkoutController>();
                 return Padding(
                   padding: const EdgeInsets.only(top: 16),
-                  child: ExerciseCard(
-                    exercise: exercise,
-                    index: index,
-                    isEditable: true,
-                    showCheckbox: true,
-                    showAddSet: true,
-                    onWeightChanged: (set, v) =>
-                        controller.updateWeight(index, set, v),
-                    onRepsChanged: (set, v) =>
-                        controller.updateReps(index, set, v),
-                    onToggleSet: (set) => controller.toggleSet(index, set),
-                    onAddSet: () => controller.addSet(index),
-                    onRemoveSet: (set) => controller.removeSet(index, set),
+                  child: ValueListenableBuilder<int?>(
+                    valueListenable: controller.restExerciseIndex,
+                    builder: (_, restIndex, _) {
+                      if (restIndex != index) {
+                        return ExerciseCard(
+                          exercise: exercise,
+                          index: index,
+                          isEditable: true,
+                          showCheckbox: true,
+                          showAddSet: true,
+                          onWeightChanged: (set, v) =>
+                              controller.updateWeight(index, set, v),
+                          onRepsChanged: (set, v) =>
+                              controller.updateReps(index, set, v),
+                          onToggleSet: (set) =>
+                              controller.toggleSet(index, set),
+                          onAddSet: () => controller.addSet(index),
+                          onRemoveSet: (set) =>
+                              controller.removeSet(index, set),
+                        );
+                      }
+                      return ValueListenableBuilder<Duration?>(
+                        valueListenable: controller.restRemaining,
+                        builder: (_, rest, _) {
+                          return ExerciseCard(
+                            exercise: exercise,
+                            index: index,
+                            isEditable: true,
+                            showCheckbox: true,
+                            showAddSet: true,
+                            activeRest: rest,
+                            onWeightChanged: (set, v) =>
+                                controller.updateWeight(index, set, v),
+                            onRepsChanged: (set, v) =>
+                                controller.updateReps(index, set, v),
+                            onToggleSet: (set) =>
+                                controller.toggleSet(index, set),
+                            onAddSet: () => controller.addSet(index),
+                            onRemoveSet: (set) =>
+                                controller.removeSet(index, set),
+                          );
+                        },
+                      );
+                    },
                   ),
                 );
               },
@@ -245,24 +330,52 @@ class _AddExerciseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AppActionButton(
-      label: 'Adicionar exercício',
+      label: l10n.workoutsAddExercise,
       icon: Icons.add,
       color: AppColors.component(context),
       onTap: () async {
-        final selected = await showModalBottomSheet<Map<String, String>>(
+        final selected = await showAtlasSheet<Map<String, String>>(
           context: context,
-          showDragHandle: true,
-          builder: (context) {
-            return ListView(
-              children: seedExercises
-                  .map(
-                    (e) => ListTile(
-                      title: Text(e['name']!),
-                      onTap: () => Navigator.pop(context, e),
+          builder: (sheetContext) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: AppSpacing.sheetMinContent,
+              minChildSize: AppSpacing.sheetMin,
+              maxChildSize: AppSpacing.sheetMax,
+              shouldCloseOnMinExtent: true,
+              builder: (_, scrollController) {
+                return Column(
+                  children: [
+                    AtlasSheetChrome(
+                      title: l10n.workoutsAddExercise,
+                      onNav: () => Navigator.pop(sheetContext),
+                      isDismiss: true,
                     ),
-                  )
-                  .toList(),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.sheetPaddingH,
+                          AppSpacing.sm,
+                          AppSpacing.sheetPaddingH,
+                          AppSpacing.sheetPaddingB,
+                        ),
+                        itemCount: seedExercises.length,
+                        itemBuilder: (context, index) {
+                          final e = seedExercises[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(e['name']!),
+                            onTap: () => Navigator.pop(sheetContext, e),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
@@ -281,24 +394,25 @@ class _DiscardWorkoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AppActionButton(
-      label: 'Descartar',
+      label: l10n.workoutsDiscard,
       icon: Icons.delete_forever_rounded,
       color: AppColors.error,
       onTap: () async {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Descartar treino?'),
-            content: const Text('Esta ação não pode ser desfeita.'),
+            title: Text(l10n.workoutsDiscardTitle),
+            content: Text(l10n.workoutsDiscardBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
+                child: Text(l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Descartar'),
+                child: Text(l10n.workoutsDiscard),
               ),
             ],
           ),
@@ -318,7 +432,7 @@ class _FinishWorkoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppActionButton(
-      label: 'Finalizar',
+      label: context.l10n.workoutsFinish,
       icon: Icons.check,
       emphasized: true,
       bold: true,

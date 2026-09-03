@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
@@ -14,6 +15,7 @@ class WorkoutDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canStart = workout.finishedAt == null;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,9 +44,9 @@ class WorkoutDetailsPage extends StatelessWidget {
             children: [
               const SizedBox(height: 10),
               if (workout.exercises.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Text('Nenhum exercício neste treino ainda.'),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(l10n.workoutsNoExercises),
                 )
               else
                 ...List.generate(
@@ -67,7 +69,7 @@ class WorkoutDetailsPage extends StatelessWidget {
               bottom: 0,
               child: SafeArea(
                 child: SlideToStartAction(
-                  text: 'Começar',
+                  text: l10n.workoutsGetStarted,
                   borderRadius: 50,
                   textStyle: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,

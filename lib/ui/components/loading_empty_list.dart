@@ -8,7 +8,11 @@ class LoadingEmptyList<T> extends StatelessWidget {
     required this.itemBuilder,
     this.emptyPadding = const EdgeInsets.symmetric(vertical: 32),
     this.loadingPadding = const EdgeInsets.all(24),
-    this.separator,
+    this.padding,
+    this.shrinkWrap = false,
+    this.physics,
+    this.separatorBuilder,
+    this.keyBuilder,
   });
 
   final Stream<List<T>> stream;
@@ -16,7 +20,11 @@ class LoadingEmptyList<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T item) itemBuilder;
   final EdgeInsetsGeometry emptyPadding;
   final EdgeInsetsGeometry loadingPadding;
-  final Widget Function(BuildContext context, List<T> items)? separator;
+  final EdgeInsetsGeometry? padding;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
+  final Widget Function(BuildContext context, int index)? separatorBuilder;
+  final Key Function(T item)? keyBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -32,19 +40,45 @@ class LoadingEmptyList<T> extends StatelessWidget {
 
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
+          if (emptyMessage.isEmpty) return const SizedBox.shrink();
           return Padding(
             padding: emptyPadding,
             child: Center(child: Text(emptyMessage)),
           );
         }
 
-        if (separator != null) {
-          return separator!(context, items);
+        if (separatorBuilder != null) {
+          return ListView.separated(
+            padding: padding,
+            shrinkWrap: shrinkWrap,
+            physics: physics,
+            itemCount: items.length,
+            separatorBuilder: separatorBuilder!,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return KeyedSubtree(
+                key: keyBuilder?.call(item),
+                child: itemBuilder(context, item),
+              );
+            },
+          );
         }
 
-        return Column(
-          spacing: 14,
-          children: items.map((item) => itemBuilder(context, item)).toList(),
+        return ListView.builder(
+          padding: padding,
+          shrinkWrap: shrinkWrap,
+          physics: physics,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return Padding(
+              padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 14),
+              child: KeyedSubtree(
+                key: keyBuilder?.call(item),
+                child: itemBuilder(context, item),
+              ),
+            );
+          },
         );
       },
     );

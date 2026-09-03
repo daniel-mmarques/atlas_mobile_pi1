@@ -1,11 +1,13 @@
-import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout_set.dart';
+import 'package:atlas_mobile_pi1/features/workouts/domain/enums/set_type.dart';
+import 'package:atlas_mobile_pi1/features/workouts/presentation/create_routine/widgets/set_type_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 
 class ExerciseCard extends StatelessWidget {
   const ExerciseCard({
@@ -15,6 +17,7 @@ class ExerciseCard extends StatelessWidget {
     this.isEditable = false,
     this.showCheckbox = false,
     this.showAddSet = false,
+    this.activeRest,
     this.onWeightChanged,
     this.onRepsChanged,
     this.onToggleSet,
@@ -28,6 +31,7 @@ class ExerciseCard extends StatelessWidget {
   final bool isEditable;
   final bool showCheckbox;
   final bool showAddSet;
+  final Duration? activeRest;
 
   final void Function(int setIndex, int value)? onWeightChanged;
   final void Function(int setIndex, int value)? onRepsChanged;
@@ -44,7 +48,7 @@ class ExerciseCard extends StatelessWidget {
         const SizedBox(height: 14),
         _Notes(note: exercise.note),
         const SizedBox(height: 14),
-        _RestTimer(rest: exercise.rest),
+        _RestTimer(rest: exercise.rest, activeRest: activeRest),
         const SizedBox(height: 14),
         _ExerciseSetList(
           sets: exercise.sets,
@@ -83,6 +87,9 @@ class _ExerciseHeader extends StatelessWidget {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
+                    cacheWidth: 120,
+                    cacheHeight: 120,
+                    filterQuality: FilterQuality.medium,
                     errorBuilder: (_, _, _) =>
                         const Icon(Icons.fitness_center),
                   )
@@ -91,12 +98,9 @@ class _ExerciseHeader extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: GestureDetector(
-            onTap: () => context.push(AppRoutes.exerciseDetails(exercise.id)),
-            child: Text(
-              exercise.name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
+          child: Text(
+            exercise.name,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
         ),
         const Icon(Icons.more_vert),
@@ -114,7 +118,7 @@ class _Notes extends StatelessWidget {
   Widget build(BuildContext context) {
     if (note.isEmpty) {
       return Text(
-        'Adicionar notas...',
+        context.l10n.addNotesHint,
         style: TextStyle(
           fontSize: 15,
           color: AppColors.textSecondary(context),
@@ -126,19 +130,38 @@ class _Notes extends StatelessWidget {
 }
 
 class _RestTimer extends StatelessWidget {
-  const _RestTimer({required this.rest});
+  const _RestTimer({required this.rest, this.activeRest});
 
   final Duration rest;
+  final Duration? activeRest;
 
   @override
   Widget build(BuildContext context) {
+    final countdown = activeRest;
+    if (countdown != null) {
+      final minutes = countdown.inMinutes.toString().padLeft(2, '0');
+      final seconds = (countdown.inSeconds % 60).toString().padLeft(2, '0');
+      return Row(
+        children: [
+          Icon(Icons.timer, size: 18, color: AppColors.accentOf(context)),
+          const SizedBox(width: 6),
+          Text(
+            context.l10n.workoutsRestCountdown(minutes, seconds),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.accentOf(context),
+            ),
+          ),
+        ],
+      );
+    }
     final minutes = rest.inMinutes;
     final seconds = rest.inSeconds % 60;
     return Row(
       children: [
         const Icon(Icons.timer_outlined, size: 18),
         const SizedBox(width: 6),
-        Text('Descanso: ${minutes}m ${seconds}s'),
+        Text(context.l10n.workoutsRest(minutes, seconds)),
       ],
     );
   }
@@ -161,12 +184,12 @@ class _AddSetButton extends StatelessWidget {
           borderRadius: AppRadii.button,
           color: AppColors.component(context),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add),
-            SizedBox(width: 4),
-            Text('Adicionar série'),
+            const Icon(Icons.add),
+            const SizedBox(width: 4),
+            Text(context.l10n.workoutsAddSet),
           ],
         ),
       ),
@@ -204,6 +227,7 @@ class _ExerciseSetList extends StatelessWidget {
           _SetRow(
             set: sets[i],
             setIndex: i,
+            workIndex: _workIndexFor(i),
             isEditable: isEditable,
             showCheckbox: showCheckbox,
             onWeightChanged: (v) => onWeightChanged?.call(i, v),
@@ -213,6 +237,14 @@ class _ExerciseSetList extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  int _workIndexFor(int index) {
+    var count = 0;
+    for (var i = 0; i <= index; i++) {
+      if (sets[i].type == SetType.work) count++;
+    }
+    return count == 0 ? 1 : count;
   }
 }
 
@@ -227,12 +259,13 @@ class _SetHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: [
-        const _FlexCell(1, Text('SÉRIE')),
-        const _FlexCell(3, Text('ANTERIOR')),
-        const _FlexCell(2, Text('KG')),
-        const _FlexCell(2, Text('REPS')),
+        _FlexCell(1, Text(l10n.workoutsSet)),
+        _FlexCell(3, Text(l10n.workoutsPrevious)),
+        _FlexCell(2, Text(l10n.workoutsKg)),
+        _FlexCell(2, Text(l10n.workoutsReps)),
         if (showCheckbox) const _FlexCell(1, Icon(Icons.check, size: 18)),
         if (showDelete) const _FlexCell(1, SizedBox.shrink()),
       ],
@@ -244,6 +277,7 @@ class _SetRow extends StatelessWidget {
   const _SetRow({
     required this.set,
     required this.setIndex,
+    required this.workIndex,
     required this.isEditable,
     required this.showCheckbox,
     this.onWeightChanged,
@@ -254,6 +288,7 @@ class _SetRow extends StatelessWidget {
 
   final WorkoutSet set;
   final int setIndex;
+  final int workIndex;
   final bool isEditable;
   final bool showCheckbox;
 
@@ -276,9 +311,10 @@ class _SetRow extends StatelessWidget {
         children: [
           _FlexCell(
             1,
-            Text(
-              '${setIndex + 1}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            SetTypeBadge(
+              type: set.type,
+              workIndex: workIndex,
+              compact: true,
             ),
           ),
           const _FlexCell(
@@ -312,18 +348,21 @@ class _SetRow extends StatelessWidget {
               Checkbox(
                 value: set.completed,
                 onChanged: (_) => onToggle?.call(),
-                activeColor: AppColors.accent,
+                activeColor: AppColors.accentOf(context),
               ),
             ),
           if (isEditable && onRemove != null)
             _FlexCell(
               1,
               IconButton(
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(Icons.close, size: AppSpacing.iconSm),
                 onPressed: onRemove,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(
+                  minWidth: AppSpacing.minTouch,
+                  minHeight: AppSpacing.minTouch,
+                ),
               ),
             ),
         ],
@@ -405,9 +444,12 @@ class _EditableNumberFieldState extends State<_EditableNumberField> {
             borderRadius: AppRadii.pill,
             borderSide: BorderSide.none,
           ),
-          focusedBorder: const OutlineInputBorder(
+          focusedBorder: OutlineInputBorder(
             borderRadius: AppRadii.pill,
-            borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+            borderSide: BorderSide(
+              color: AppColors.accentOf(context),
+              width: 1.5,
+            ),
           ),
         ),
         style: TextStyle(

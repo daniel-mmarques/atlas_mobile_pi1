@@ -43,7 +43,7 @@ class NavigationBarWidget extends StatelessWidget {
                 onPressed: () => onTap(index),
                 icon: Icon(
                   selected ? _icons[index].$2 : _icons[index].$1,
-                  size: 26,
+                  size: AppSpacing.iconNav,
                   color: selected ? active : inactive,
                 ),
               );

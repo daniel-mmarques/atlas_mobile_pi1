@@ -11,12 +11,28 @@ class AppActionButton extends StatelessWidget {
     this.icon,
     this.color,
     this.foregroundColor,
-    this.height = 48,
+    this.height = AppSpacing.buttonHeight,
     this.borderRadius = AppRadii.button,
     this.bold = false,
     this.stacked = false,
     this.emphasized = false,
+    this.alignStart = false,
   });
+
+  /// CTA de sheet (altura maior, radius alinhado à sheet).
+  const AppActionButton.sheet({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.color,
+    this.foregroundColor,
+    this.bold = true,
+    this.stacked = false,
+    this.emphasized = true,
+    this.alignStart = false,
+  })  : height = AppSpacing.buttonHeightLg,
+        borderRadius = AppRadii.sheetButton;
 
   final String label;
   final VoidCallback? onTap;
@@ -31,22 +47,35 @@ class AppActionButton extends StatelessWidget {
   /// Fundo invertido para CTA em destaque.
   final bool emphasized;
 
+  /// Ícone + texto alinhados à esquerda (com padding).
+  final bool alignStart;
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDisabled = onTap == null;
     final Color bg;
     final Color fg;
 
-    if (emphasized) {
-      bg = isDark ? AppColors.white : AppColors.darkSurface;
-      fg = isDark ? AppColors.darkSurface : AppColors.white;
+    if (isDisabled) {
+      bg = color ?? AppColors.disabledBackground(context);
+      fg = foregroundColor ?? AppColors.disabledForeground(context);
+    } else if (emphasized) {
+      bg = AppColors.textPrimary(context);
+      fg = AppColors.surface(context);
     } else if (color != null) {
       bg = color!;
-      fg = foregroundColor ?? AppColors.white;
+      fg = foregroundColor ?? AppColors.onAccentOf(context);
     } else {
       bg = AppColors.component(context);
       fg = foregroundColor ?? AppColors.textPrimary(context);
     }
+
+    final labelStyle = TextStyle(
+      color: fg,
+      fontWeight: bold || emphasized ? FontWeight.w600 : FontWeight.w500,
+      fontSize: 16,
+      letterSpacing: -0.2,
+    );
 
     return Material(
       color: bg,
@@ -60,40 +89,40 @@ class AppActionButton extends StatelessWidget {
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (icon != null) Icon(icon, color: fg, size: 20),
+                    if (icon != null)
+                      Icon(icon, color: fg, size: AppSpacing.iconMd),
                     if (icon != null) const SizedBox(height: AppSpacing.xs),
                     Text(
                       label,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: fg,
-                        fontWeight: bold || emphasized
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        letterSpacing: -0.2,
-                      ),
+                      style: labelStyle,
                     ),
                   ],
                 )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, color: fg, size: 20),
-                      const SizedBox(width: AppSpacing.sm),
-                    ],
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: fg,
-                        fontWeight: bold || emphasized
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        letterSpacing: -0.2,
+              : Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: alignStart ? AppSpacing.lg : 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: alignStart
+                        ? MainAxisAlignment.start
+                        : MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: fg, size: AppSpacing.iconMd),
+                        const SizedBox(width: AppSpacing.sm),
+                      ],
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: labelStyle,
+                          textAlign:
+                              alignStart ? TextAlign.start : TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +28,7 @@ class ShellPageHeader extends StatelessWidget {
     final titleChild = onTitleTap == null
         ? titleText
         : InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadii.sm,
             onTap: onTitleTap,
             child: titleText,
           );

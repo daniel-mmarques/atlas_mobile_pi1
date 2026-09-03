@@ -1,31 +1,33 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/home_widget_labels.dart';
+import 'package:atlas_mobile_pi1/ui/components/app_action_button.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
+import 'package:atlas_mobile_pi1/ui/widgets/magnet_snap_scroll_physics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 Future<void> showAddWidgetSheet(BuildContext context) {
   final controller = context.read<HomeDashboardController>();
 
-  return showModalBottomSheet<void>(
+  return showAtlasSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
     builder: (_) {
       return ChangeNotifierProvider<HomeDashboardController>.value(
         value: controller,
         child: DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.92,
-          minChildSize: 0.55,
-          maxChildSize: 0.95,
+          initialChildSize: AppSpacing.sheetInitial,
+          minChildSize: AppSpacing.sheetMinContent,
+          maxChildSize: AppSpacing.sheetMax,
+          shouldCloseOnMinExtent: true,
           builder: (_, scrollController) {
             return AddWidgetSheet(scrollController: scrollController);
           },
@@ -40,25 +42,26 @@ Future<HomeWidgetStyle?> showPickStyleSheet(
   required HomeWidgetType type,
   HomeWidgetStyle? current,
 }) {
-  return showModalBottomSheet<HomeWidgetStyle>(
+  return showAtlasSheet<HomeWidgetStyle>(
     context: context,
-    useRootNavigator: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
+    isScrollControlled: false,
     builder: (ctx) {
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.md,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sheetPaddingB,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SheetHandle(),
+              const AtlasSheetHandle(),
               const SizedBox(height: 16),
               Text(
-                'Estilo',
+                ctx.l10n.widgetStyleTitle,
                 style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -68,9 +71,9 @@ Future<HomeWidgetStyle?> showPickStyleSheet(
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(style.icon),
-                  title: Text(style.label),
+                  title: Text(style.label(ctx.l10n)),
                   trailing: current == style
-                      ? Icon(Icons.check_rounded, color: AppColors.accent)
+                      ? Icon(Icons.check_rounded, color: AppColors.accentOf(context))
                       : null,
                   onTap: () => Navigator.pop(ctx, style),
                 ),
@@ -91,19 +94,13 @@ Future<HomeWidgetSize?> showPickSizeSheet(
   var index = current == null ? 0 : sizes.indexOf(current);
   if (index < 0) index = 0;
 
-  return showModalBottomSheet<HomeWidgetSize>(
+  return showAtlasSheet<HomeWidgetSize>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (ctx) {
       return _SizePickerSheet(
         type: type,
         initialIndex: index,
-        name: type.label,
+        name: type.label(context.l10n),
       );
     },
   );
@@ -151,7 +148,7 @@ class _AddWidgetSheetState extends State<AddWidgetSheet> {
   void _selectType(HomeWidgetType type) {
     setState(() {
       _type = type;
-      _nameController.text = type.label;
+      _nameController.text = type.label(context.l10n);
       _sizeIndex = 0;
     });
   }
@@ -164,7 +161,7 @@ class _AddWidgetSheetState extends State<AddWidgetSheet> {
   void _goToSizeStep() {
     final name = _nameController.text.trim();
     if (name.isEmpty && _type != null) {
-      _nameController.text = _type!.label;
+      _nameController.text = _type!.label(context.l10n);
     }
     FocusScope.of(context).unfocus();
     setState(() => _step = 2);
@@ -182,7 +179,7 @@ class _AddWidgetSheetState extends State<AddWidgetSheet> {
     final size = sizes[_sizeIndex.clamp(0, sizes.length - 1)];
     final style = type.styleForSize(size);
     final name = _nameController.text.trim().isEmpty
-        ? type.label
+        ? type.label(context.l10n)
         : _nameController.text.trim();
 
     await context.read<HomeDashboardController>().addWidget(
@@ -197,167 +194,329 @@ class _AddWidgetSheetState extends State<AddWidgetSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return switch (_step) {
-      0 => _TypeStep(
-          scrollController: widget.scrollController,
-          selected: _type,
-          onBack: _back,
-          onSelect: _selectType,
-          onContinue: _type == null ? null : _goToNameStep,
-        ),
-      1 => _NameStep(
-          scrollController: widget.scrollController,
-          controller: _nameController,
-          onBack: _back,
-          onContinue: _goToSizeStep,
-        ),
-      _ => _SizeStep(
-          type: _type!,
-          name: _nameController.text.trim().isEmpty
-              ? _type!.label
-              : _nameController.text.trim(),
-          pageController: _pageController,
-          sizeIndex: _sizeIndex,
-          onBack: _back,
-          onPageChanged: (i) => setState(() => _sizeIndex = i),
-          onConfirm: _confirm,
-        ),
-    };
+    return AtlasSheetContentTransition(
+      child: KeyedSubtree(
+        key: ValueKey(_step),
+        child: switch (_step) {
+          0 => _TypeStep(
+              selected: _type,
+              onBack: _back,
+              onSelect: _selectType,
+              onContinue: _type == null ? null : _goToNameStep,
+            ),
+          1 => _NameStep(
+              scrollController: widget.scrollController,
+              controller: _nameController,
+              onBack: _back,
+              onContinue: _goToSizeStep,
+            ),
+          _ => _SizeStep(
+              type: _type!,
+              name: _nameController.text.trim().isEmpty
+                  ? _type!.label(context.l10n)
+                  : _nameController.text.trim(),
+              pageController: _pageController,
+              sizeIndex: _sizeIndex,
+              onBack: _back,
+              onPageChanged: (i) => setState(() => _sizeIndex = i),
+              onConfirm: _confirm,
+            ),
+        },
+      ),
+    );
   }
 }
 
-class _TypeStep extends StatelessWidget {
+class _TypeStep extends StatefulWidget {
   const _TypeStep({
-    required this.scrollController,
     required this.selected,
     required this.onBack,
     required this.onSelect,
     required this.onContinue,
   });
 
-  final ScrollController? scrollController;
   final HomeWidgetType? selected;
   final VoidCallback onBack;
   final void Function(HomeWidgetType) onSelect;
   final VoidCallback? onContinue;
 
   @override
+  State<_TypeStep> createState() => _TypeStepState();
+}
+
+class _TypeStepState extends State<_TypeStep> {
+  static const double _itemExtent = 64;
+  static const double _bandTopFraction = 0.22;
+  static const double _ctaSize = 40;
+
+  /// Espaço entre o gutter lateral e o CTA circular sobre a lista.
+  static const double _ctaGap = AppSpacing.md;
+
+  late final ScrollController _scrollController;
+
+  /// Índice 0 = vazio (nada selecionado). 1..n = [HomeWidgetType.values].
+  int _wheelIndex = 0;
+
+  List<HomeWidgetType> get _types => HomeWidgetType.values;
+
+  int get _slotCount => 1 + _types.length;
+
+  HomeWidgetType? get _focusedType =>
+      _wheelIndex <= 0 ? null : _types[_wheelIndex - 1];
+
+  bool get _canAdvance => _focusedType != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
+    final selected = widget.selected;
+    if (selected != null) {
+      final i = _types.indexOf(selected);
+      if (i >= 0) _wheelIndex = i + 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        _scrollController.jumpTo(_wheelIndex * _itemExtent);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final index = (_scrollController.offset / _itemExtent)
+        .round()
+        .clamp(0, _slotCount - 1);
+    if (index == _wheelIndex) return;
+
+    setState(() => _wheelIndex = index);
+    HapticFeedback.selectionClick();
+
+    final type = _focusedType;
+    if (type != null) widget.onSelect(type);
+  }
+
+  double _opacityFor(int index) {
+    if (index <= 0) return 0;
+    final distance = (index - _wheelIndex).abs();
+    if (distance == 0) return 1;
+    if (distance == 1) return 0.55;
+    if (distance == 2) return 0.38;
+    if (distance == 3) return 0.26;
+    return 0.16;
+  }
+
+  String _footerTitle(BuildContext context) {
+    final type = _focusedType;
+    final l10n = context.l10n;
+    if (type == null) return l10n.widgetCreateTitle;
+    return type.sheetFooterTitle(l10n);
+  }
+
+  String _footerSubtitle(BuildContext context) {
+    final type = _focusedType;
+    final l10n = context.l10n;
+    if (type == null) return l10n.widgetCreateSubtitle;
+    return type.sheetFooterSubtitle(l10n);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final primary = AppColors.textPrimary(context);
     final secondary = AppColors.textSecondary(context);
+    final surface = AppColors.surface(context);
+    final border = AppColors.border(context);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 10),
-        const _SheetHandle(),
+        const SizedBox(height: AppSpacing.sm),
+        const AtlasSheetHandle(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 20, 0),
-          child: IconButton(
-            onPressed: onBack,
-            icon: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 32,
-              color: AppColors.textPrimary(context),
-            ),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sectionGap,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sm,
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.border(context).withValues(alpha: 0.5),
-                ),
-                bottom: BorderSide(
-                  color: AppColors.border(context).withValues(alpha: 0.5),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.widgetCreateTitle,
+                  style: AppTypography.sheetTitle(context),
                 ),
               ),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    selected?.label ?? '',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: selected == null
-                          ? secondary
-                          : AppColors.textPrimary(context),
-                    ),
-                  ),
-                ),
-                Material(
-                  color: selected == null
-                      ? AppColors.component(context)
-                      : Colors.white,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onContinue,
-                    child: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: selected == null
-                            ? secondary
-                            : Colors.black,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            children: [
-              for (final type in HomeWidgetType.values)
-                InkWell(
-                  onTap: () => onSelect(type),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: Text(
-                      type.label,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -0.6,
-                        color: selected == type
-                            ? AppColors.textPrimary(context)
-                            : secondary,
-                      ),
-                    ),
-                  ),
-                ),
+              const SizedBox(width: AppSpacing.sm),
+              AtlasSheetNavIcon(
+                onPressed: widget.onBack,
+                isDismiss: true,
+              ),
             ],
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            0,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sm,
+          ),
+          child: Text(
+            l10n.widgetCreateSubtitle,
+            style: AppTypography.meta(context).copyWith(fontSize: 15),
+          ),
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final topPad = (constraints.maxHeight * _bandTopFraction)
+                  .clamp(_itemExtent, constraints.maxHeight * 0.4);
+              final bottomPad =
+                  (constraints.maxHeight - topPad - _itemExtent).clamp(
+                _itemExtent * 2,
+                constraints.maxHeight,
+              );
+
+              return Stack(
+                children: [
+                  ListView.builder(
+                    controller: _scrollController,
+                    physics: const MagnetSnapScrollPhysics(
+                      itemExtent: _itemExtent,
+                      parent: BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                    ),
+                    padding: EdgeInsets.only(
+                      top: topPad,
+                      bottom: bottomPad,
+                      left: AppSpacing.sheetPaddingH,
+                      right: AppSpacing.sheetPaddingH + _ctaSize + _ctaGap,
+                    ),
+                    itemExtent: _itemExtent,
+                    itemCount: _slotCount,
+                    itemBuilder: (context, index) {
+                      if (index <= 0) return const SizedBox.shrink();
+                      final type = _types[index - 1];
+                      final isFocused = index == _wheelIndex;
+                      final opacity = _opacityFor(index);
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          type.label(l10n),
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            color: isFocused
+                                ? primary
+                                : secondary.withValues(alpha: opacity),
+                            fontSize: 28,
+                            fontWeight:
+                                isFocused ? FontWeight.w700 : FontWeight.w600,
+                            height: 1.1,
+                            letterSpacing: -0.6,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    top: topPad,
+                    left: 0,
+                    right: 0,
+                    height: _itemExtent,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: border.withValues(alpha: 0.55),
+                            ),
+                            bottom: BorderSide(
+                              color: border.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: topPad + (_itemExtent - _ctaSize) / 2,
+                    right: AppSpacing.sheetPaddingH,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: _canAdvance ? 1 : 0.28,
+                      child: Material(
+                        color: _canAdvance
+                            ? primary
+                            : primary.withValues(alpha: 0.35),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: _canAdvance ? widget.onContinue : null,
+                          child: SizedBox(
+                              width: _ctaSize,
+                              height: _ctaSize,
+                            child: Icon(
+                              Icons.arrow_forward,
+                              size: 20,
+                              color: _canAdvance
+                                  ? surface
+                                  : surface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        Divider(height: 1, color: border.withValues(alpha: 0.4)),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.lg,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sheetPaddingB,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                selected?.sheetFooterTitle ??
-                    'Add a widget to your dashboard',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 160),
+                child: Text(
+                  _footerTitle(context),
+                  key: ValueKey(_footerTitle(context)),
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                selected?.sheetFooterSubtitle ??
-                    'Pick the data you want to see on Home.',
-                style: TextStyle(color: secondary, fontSize: 14, height: 1.3),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 160),
+                child: Text(
+                  _footerSubtitle(context),
+                  key: ValueKey(_footerSubtitle(context)),
+                  style: TextStyle(color: secondary, fontSize: 14, height: 1.3),
+                ),
               ),
             ],
           ),
@@ -382,41 +541,39 @@ class _NameStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondary = AppColors.textSecondary(context);
-
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.sheetPaddingH,
+        AppSpacing.sm,
+        AppSpacing.sheetPaddingH,
+        AppSpacing.sheetPaddingB,
+      ),
       children: [
-        const _SheetHandle(),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            onPressed: onBack,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              size: 28,
-              color: AppColors.textPrimary(context),
+        const AtlasSheetHandle(),
+        const SizedBox(height: AppSpacing.sectionGap),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AtlasSheetNavIcon(
+              onPressed: onBack,
+              isDismiss: false,
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Name',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.6,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                context.l10n.widgetNameTitle,
+                style: AppTypography.sheetTitle(context),
               ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.sm),
         Text(
-          'Customize the name if you like',
-          style: TextStyle(color: secondary, fontSize: 15),
+          context.l10n.widgetNameCustomize,
+          style: AppTypography.meta(context).copyWith(fontSize: 15),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: AppSpacing.xxl),
         TextField(
           controller: controller,
           autofocus: true,
@@ -425,7 +582,7 @@ class _NameStep extends StatelessWidget {
             fontWeight: FontWeight.w600,
             letterSpacing: -0.5,
           ),
-          cursorColor: AppColors.accent,
+          cursorColor: AppColors.accentOf(context),
           decoration: InputDecoration(
             isDense: true,
             border: UnderlineInputBorder(
@@ -438,8 +595,11 @@ class _NameStep extends StatelessWidget {
                 color: AppColors.border(context),
               ),
             ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.white, width: 1.4),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: AppColors.accentOf(context),
+                width: 1.4,
+              ),
             ),
           ),
           textInputAction: TextInputAction.done,
@@ -463,22 +623,27 @@ class _NameStep extends StatelessWidget {
             ),
             const Spacer(),
             Material(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               borderRadius: AppRadii.pill,
               child: InkWell(
                 onTap: onContinue,
                 borderRadius: AppRadii.pill,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.surface(context),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'Continue',
+                        context.l10n.continueAction,
                         style: TextStyle(
-                          color: Colors.black,
+                          color: AppColors.surface(context),
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
@@ -523,16 +688,19 @@ class _SizeStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
-        const _SheetHandle(),
+        const AtlasSheetHandle(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 20, 0),
-          child: IconButton(
-            onPressed: onBack,
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              size: 28,
-              color: AppColors.textPrimary(context),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sm,
+            AppSpacing.sheetPaddingH,
+            0,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AtlasSheetNavIcon(
+              onPressed: onBack,
+              isDismiss: false,
             ),
           ),
         ),
@@ -558,7 +726,12 @@ class _SizeStep extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sm,
+            AppSpacing.sheetPaddingH,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -579,32 +752,16 @@ class _SizeStep extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onConfirm,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: const StadiumBorder(),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.download_rounded, size: 20),
-                  SizedBox(width: 10),
-                  Text(
-                    'Add to Workouts',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.sheetPaddingH,
+            AppSpacing.xxl,
+            AppSpacing.sheetPaddingH,
+            AppSpacing.sheetPaddingB,
+          ),
+          child: AppActionButton.sheet(
+            label: context.l10n.widgetAddToWorkouts,
+            icon: Icons.download_rounded,
+            onTap: onConfirm,
           ),
         ),
       ],
@@ -658,9 +815,8 @@ class _SizePickerSheetState extends State<_SizePickerSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            const _SheetHandle(),
-            const SizedBox(height: 8),
+            const AtlasSheetHandle(),
+            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -681,32 +837,27 @@ class _SizePickerSheetState extends State<_SizePickerSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.sheetPaddingH,
+                AppSpacing.sm,
+                AppSpacing.sheetPaddingH,
+                0,
+              ),
               child: Text(
                 size.layoutTitle,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                ),
+                style: AppTypography.cardTitle(context),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(context, size),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: const Text(
-                    'Aplicar tamanho',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.sheetPaddingH,
+                AppSpacing.xl,
+                AppSpacing.sheetPaddingH,
+                AppSpacing.sheetPaddingB,
+              ),
+              child: AppActionButton.sheet(
+                label: context.l10n.widgetApplySize,
+                onTap: () => Navigator.pop(context, size),
               ),
             ),
           ],
@@ -729,6 +880,7 @@ class _LayoutPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final maxW = MediaQuery.sizeOf(context).width * 0.62;
     final base = maxW / 2;
     final width = (base * size.width).clamp(120.0, maxW);
@@ -755,7 +907,7 @@ class _LayoutPreviewCard extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            type.previewValue,
+            type.previewValue(l10n),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.8,
@@ -774,31 +926,13 @@ class _LayoutPreviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            type.emptyStatus,
+            type.emptyStatus(l10n),
             style: TextStyle(
               color: AppColors.textSecondary(context),
               fontSize: 13,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SheetHandle extends StatelessWidget {
-  const _SheetHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: AppColors.border(context).withValues(alpha: 0.7),
-          borderRadius: AppRadii.pill,
-        ),
       ),
     );
   }

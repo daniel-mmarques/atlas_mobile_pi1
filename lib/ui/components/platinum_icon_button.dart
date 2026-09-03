@@ -1,13 +1,14 @@
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 
-/// Botão de ícone circular.
+/// Botão de ícone circular — alvo de toque mínimo 44pt (HIG).
 class AppIconButton extends StatelessWidget {
   const AppIconButton({
     super.key,
     required this.icon,
     required this.onPressed,
-    this.size = 42,
+    this.size = AppSpacing.minTouch,
     this.iconSize = 24,
     this.backgroundColor,
     this.foregroundColor,
@@ -24,12 +25,18 @@ class AppIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = backgroundColor ?? AppColors.component(context);
-    final fg = foregroundColor ?? AppColors.textPrimary(context);
+    final isDisabled = onPressed == null;
+    final bg = isDisabled
+        ? (backgroundColor ?? AppColors.disabledBackground(context))
+        : (backgroundColor ?? AppColors.component(context));
+    final fg = isDisabled
+        ? (foregroundColor ?? AppColors.disabledForeground(context))
+        : (foregroundColor ?? AppColors.textPrimary(context));
+    final side = size < AppSpacing.minTouch ? AppSpacing.minTouch : size;
 
     final button = SizedBox(
-      width: size,
-      height: size,
+      width: side,
+      height: side,
       child: Material(
         color: bg,
         shape: const CircleBorder(),
@@ -59,6 +66,10 @@ class PlatinumIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppIconButton(icon: icon, onPressed: onPressed, iconSize: 26);
+    return AppIconButton(
+      icon: icon,
+      onPressed: onPressed,
+      iconSize: AppSpacing.iconNav,
+    );
   }
 }

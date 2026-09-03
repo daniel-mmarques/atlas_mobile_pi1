@@ -10,7 +10,7 @@ class SplashScreen extends StatelessWidget {
     final logoSize = AppResponsive.logoSize(context);
 
     return Scaffold(
-      backgroundColor: AppColors.darkSurface,
+      backgroundColor: AppColors.surface(context),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -25,7 +25,7 @@ class SplashScreen extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 16),
-                const CircularProgressIndicator(color: AppColors.accent),
+                CircularProgressIndicator(color: AppColors.accentOf(context)),
               ],
             ),
           ),

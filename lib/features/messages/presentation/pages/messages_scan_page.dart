@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -38,7 +39,7 @@ class _MessagesScanPageState extends State<MessagesScanPage> {
       final me = auth.appUser;
       final uid = auth.user?.uid;
       if (me == null || uid == null) {
-        setState(() => _message = 'Não autenticado');
+        setState(() => _message = context.l10n.notAuthenticated);
         return;
       }
 
@@ -102,7 +103,7 @@ class _MessagesScanPageState extends State<MessagesScanPage> {
           );
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vínculo coach criado')),
+            SnackBar(content: Text(context.l10n.messagesCoachLinkCreated)),
           );
           context.pop();
           return;
@@ -119,7 +120,7 @@ class _MessagesScanPageState extends State<MessagesScanPage> {
           );
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vínculo coach criado')),
+            SnackBar(content: Text(context.l10n.messagesCoachLinkCreated)),
           );
           context.pop();
           return;
@@ -147,7 +148,7 @@ class _MessagesScanPageState extends State<MessagesScanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear'),
+        title: Text(context.l10n.messagesScan),
         centerTitle: true,
       ),
       body: Column(

@@ -1,4 +1,5 @@
 import 'package:atlas_mobile_pi1/core/errors/auth_exception.dart';
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
@@ -28,7 +29,6 @@ class _SignInPageState extends State<SignInPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool isLogin = true;
-  String button = 'Login';
   bool loading = false;
 
   @override
@@ -40,7 +40,6 @@ class _SignInPageState extends State<SignInPage> {
   void setFormAction(bool action) {
     setState(() {
       isLogin = action;
-      button = isLogin ? 'Login' : 'Sign Up';
     });
   }
 
@@ -97,13 +96,15 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final titleSize = AppResponsive.font(context, base: 26, min: 20, max: 28);
     final subtitleSize = AppResponsive.font(context, base: 15, min: 13, max: 16);
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final short = AppResponsive.isShort(context);
+    final buttonLabel = isLogin ? l10n.authLogin : l10n.authRegister;
 
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.surface(context),
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         bottom: false,
@@ -130,9 +131,9 @@ class _SignInPageState extends State<SignInPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Go ahead and set up\nyour account',
+                              l10n.authSetupTitle,
                               style: TextStyle(
-                                color: AppColors.white,
+                                color: AppColors.textPrimary(context),
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.w900,
                                 height: 1.2,
@@ -140,9 +141,9 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             SizedBox(height: short ? 8 : 12),
                             Text(
-                              'Sign in-up to enjoy the best managing experience',
+                              l10n.authSetupSubtitle,
                               style: TextStyle(
-                                color: AppColors.darkTextSecondary,
+                                color: AppColors.textSecondary(context),
                                 fontSize: subtitleSize,
                                 height: 1.35,
                               ),
@@ -157,8 +158,8 @@ class _SignInPageState extends State<SignInPage> {
                   constraints: BoxConstraints(maxHeight: panelMaxHeight),
                   child: Container(
                     width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: AppColors.white,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSecondary(context),
                       borderRadius: AppRadii.authPanel,
                     ),
                     child: SingleChildScrollView(
@@ -187,10 +188,11 @@ class _SignInPageState extends State<SignInPage> {
                               enabled: !loading,
                               decoration: authInputDecoration(
                                 context,
-                                hint: 'Email',
+                                hint: l10n.authEmailHint,
                                 icon: Icons.email_outlined,
                               ),
-                              validator: CreateUserValidators.email,
+                              validator: (value) =>
+                                  CreateUserValidators.email(value, l10n),
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -208,14 +210,14 @@ class _SignInPageState extends State<SignInPage> {
                               },
                               decoration: authInputDecoration(
                                 context,
-                                hint: 'Password',
+                                hint: l10n.authPasswordHint,
                                 icon: Icons.lock_outline,
                                 suffix: IconButton(
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_off
                                         : Icons.visibility,
-                                    color: AppColors.lightTextSecondary,
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -224,7 +226,8 @@ class _SignInPageState extends State<SignInPage> {
                                   },
                                 ),
                               ),
-                              validator: CreateUserValidators.password,
+                              validator: (value) =>
+                                  CreateUserValidators.password(value, l10n),
                             ),
                             if (!isLogin) ...[
                               const SizedBox(height: 14),
@@ -236,14 +239,14 @@ class _SignInPageState extends State<SignInPage> {
                                 enabled: !loading,
                                 decoration: authInputDecoration(
                                   context,
-                                  hint: 'Confirm password',
+                                  hint: l10n.authConfirmPasswordHint,
                                   icon: Icons.lock_outline,
                                   suffix: IconButton(
                                     icon: Icon(
                                       _obscureConfirmPassword
                                           ? Icons.visibility_off
                                           : Icons.visibility,
-                                      color: AppColors.lightTextSecondary,
+                                      color: AppColors.textSecondary(context),
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -257,6 +260,7 @@ class _SignInPageState extends State<SignInPage> {
                                     CreateUserValidators.confirmPassword(
                                   value,
                                   _passwordController.text,
+                                  l10n,
                                 ),
                               ),
                             ],
@@ -266,9 +270,9 @@ class _SignInPageState extends State<SignInPage> {
                                 child: TextButton(
                                   onPressed: () {},
                                   child: Text(
-                                    'Forgot password?',
+                                    l10n.authForgotPassword,
                                     style: TextStyle(
-                                      color: AppColors.accent,
+                                      color: AppColors.accentOf(context),
                                       fontSize: AppResponsive.font(
                                         context,
                                         base: 14,
@@ -301,24 +305,24 @@ class _SignInPageState extends State<SignInPage> {
                                         },
                                   style: ElevatedButton.styleFrom(
                                     minimumSize: const Size.fromHeight(50),
-                                    backgroundColor: AppColors.accent,
+                                    backgroundColor: AppColors.accentOf(context),
                                     disabledBackgroundColor:
-                                        AppColors.accent.withValues(alpha: 0.6),
+                                        AppColors.accentOf(context).withValues(alpha: 0.6),
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: AppRadii.pill,
                                     ),
                                   ),
                                   child: loading
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           height: 22,
                                           width: 22,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: AppColors.white,
+                                            color: AppColors.onAccentOf(context),
                                           ),
                                         )
                                       : Text(
-                                          button,
+                                          buttonLabel,
                                           style: TextStyle(
                                             fontSize: AppResponsive.font(
                                               context,
@@ -326,7 +330,7 @@ class _SignInPageState extends State<SignInPage> {
                                               min: 14,
                                             ),
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.white,
+                                            color: AppColors.onAccentOf(context),
                                           ),
                                         ),
                                 ),
@@ -373,30 +377,32 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Widget _buildSocialDivider(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.lightBorder)),
+        Expanded(child: Divider(color: AppColors.border(context))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'ou continue com',
+            l10n.authOrContinueWith,
             style: TextStyle(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(context),
               fontSize: AppResponsive.font(context, base: 13, min: 12),
             ),
           ),
         ),
-        const Expanded(child: Divider(color: AppColors.lightBorder)),
+        Expanded(child: Divider(color: AppColors.border(context))),
       ],
     );
   }
 
   Widget _buildSocialButtons(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: [
         Expanded(
           child: _SocialAuthButton(
-            label: 'Google',
+            label: l10n.authGoogle,
             icon: Icons.g_mobiledata_rounded,
             enabled: !loading,
             onPressed: () => _socialLogin(
@@ -407,7 +413,7 @@ class _SignInPageState extends State<SignInPage> {
         const SizedBox(width: 12),
         Expanded(
           child: _SocialAuthButton(
-            label: 'Apple',
+            label: l10n.authApple,
             icon: Icons.apple,
             enabled: !loading,
             onPressed: () => _socialLogin(
@@ -420,6 +426,7 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Widget _buildToggle(BuildContext context) {
+    final l10n = context.l10n;
     return LayoutBuilder(
       builder: (context, constraints) {
         final thumbWidth = (constraints.maxWidth - 12) / 2;
@@ -428,7 +435,7 @@ class _SignInPageState extends State<SignInPage> {
           height: 52,
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.lightComponent,
+            color: AppColors.component(context),
             borderRadius: AppRadii.pill,
           ),
           child: Stack(
@@ -441,11 +448,12 @@ class _SignInPageState extends State<SignInPage> {
                 child: Container(
                   width: thumbWidth,
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: AppColors.textPrimary(context),
                     borderRadius: BorderRadius.circular(25),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                        color: AppColors.lightBorder,
+                        color: AppColors.textPrimary(context)
+                            .withValues(alpha: 0.18),
                         blurRadius: 8,
                       ),
                     ],
@@ -460,7 +468,7 @@ class _SignInPageState extends State<SignInPage> {
                       onTap: loading ? null : () => setFormAction(true),
                       child: Center(
                         child: Text(
-                          'Login',
+                          l10n.authLogin,
                           style: TextStyle(
                             fontSize: AppResponsive.font(
                               context,
@@ -469,8 +477,8 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             fontWeight: FontWeight.bold,
                             color: isLogin
-                                ? AppColors.black
-                                : AppColors.lightTextSecondary,
+                                ? AppColors.surface(context)
+                                : AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -482,7 +490,7 @@ class _SignInPageState extends State<SignInPage> {
                       onTap: loading ? null : () => setFormAction(false),
                       child: Center(
                         child: Text(
-                          'Register',
+                          l10n.authRegister,
                           style: TextStyle(
                             fontSize: AppResponsive.font(
                               context,
@@ -491,8 +499,8 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             fontWeight: FontWeight.bold,
                             color: !isLogin
-                                ? AppColors.black
-                                : AppColors.lightTextSecondary,
+                                ? AppColors.surface(context)
+                                : AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -527,8 +535,8 @@ class _SocialAuthButton extends StatelessWidget {
       onPressed: enabled ? onPressed : null,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(50),
-        foregroundColor: AppColors.black,
-        side: const BorderSide(color: AppColors.lightBorder),
+        foregroundColor: AppColors.textPrimary(context),
+        side: BorderSide(color: AppColors.border(context)),
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
       ),
       child: Row(

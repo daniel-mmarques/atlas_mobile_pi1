@@ -1,3 +1,5 @@
+import 'package:atlas_mobile_pi1/l10n/app_localizations.dart';
+
 enum ActivityLevel {
   sedentary,
   lightlyActive,
@@ -5,20 +7,13 @@ enum ActivityLevel {
   veryActive,
   extremelyActive;
 
-  String get label {
-    switch (this) {
-      case ActivityLevel.sedentary:
-        return 'Sedentário';
-      case ActivityLevel.lightlyActive:
-        return 'Pouco ativo';
-      case ActivityLevel.moderatelyActive:
-        return 'Moderadamente ativo';
-      case ActivityLevel.veryActive:
-        return 'Muito ativo';
-      case ActivityLevel.extremelyActive:
-        return 'Extremamente ativo';
-    }
-  }
+  String label(AppLocalizations l10n) => switch (this) {
+        ActivityLevel.sedentary => l10n.activitySedentary,
+        ActivityLevel.lightlyActive => l10n.activityLightly,
+        ActivityLevel.moderatelyActive => l10n.activityModerately,
+        ActivityLevel.veryActive => l10n.activityVery,
+        ActivityLevel.extremelyActive => l10n.activityExtremely,
+      };
 
   static ActivityLevel? fromStorage(String? value) {
     if (value == null) return null;

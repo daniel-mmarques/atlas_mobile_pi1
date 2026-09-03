@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -83,9 +84,10 @@ class _MessagesSearchPageState extends State<MessagesSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buscar'),
+        title: Text(l10n.search),
         centerTitle: true,
       ),
       body: Column(
@@ -95,9 +97,9 @@ class _MessagesSearchPageState extends State<MessagesSearchPage> {
             child: TextField(
               controller: _controller,
               autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Nome de pessoa ou comunidade',
-                prefixIcon: Icon(Icons.search_rounded),
+              decoration: InputDecoration(
+                hintText: l10n.messagesSearchHint,
+                prefixIcon: const Icon(Icons.search_rounded),
               ),
               onChanged: _search,
             ),
@@ -117,26 +119,34 @@ class _MessagesSearchPageState extends State<MessagesSearchPage> {
                   ..._users.map(
                     (u) => ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: AppColors.accent,
+                        backgroundColor: AppColors.accentOf(context),
                         child: Text(
-                          (u.name ?? u.email).isNotEmpty
-                              ? (u.name ?? u.email)[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(color: Colors.white),
+                          () {
+                            final label =
+                                u.displayLabel.replaceFirst('@', '');
+                            return label.isNotEmpty
+                                ? label[0].toUpperCase()
+                                : '?';
+                          }(),
+                          style: TextStyle(
+                            color: AppColors.onAccentOf(context),
+                          ),
                         ),
                       ),
-                      title: Text(u.name ?? u.email),
-                      subtitle: Text(u.email),
+                      title: Text(u.displayLabel),
+                      subtitle: Text(
+                        u.name?.isNotEmpty == true ? u.name! : u.email,
+                      ),
                       onTap: () => _openDm(u),
                     ),
                   ),
                 ],
                 if (_communities.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(
-                      'Comunidades',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      l10n.messagesCommunity,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                   ..._communities.map(
@@ -146,7 +156,7 @@ class _MessagesSearchPageState extends State<MessagesSearchPage> {
                         child: const Icon(Icons.groups_rounded),
                       ),
                       title: Text(c.title),
-                      subtitle: Text('${c.participantIds.length} membros'),
+                      subtitle: Text(l10n.messagesMembers(c.participantIds.length)),
                       onTap: () => _joinCommunity(c),
                     ),
                   ),

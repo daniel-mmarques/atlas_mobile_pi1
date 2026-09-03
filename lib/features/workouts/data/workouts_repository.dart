@@ -9,7 +9,8 @@ abstract class WorkoutsRepository {
   Future<void> saveWorkout(Workout workout);
   Future<void> deleteWorkout(String id);
   Future<Workout?> getWorkout(String id);
-  Stream<List<Workout>> watchUserWorkouts(String userId);
+  /// When [limit] is set, only the newest workouts are streamed.
+  Stream<List<Workout>> watchUserWorkouts(String userId, {int? limit});
 }
 
 class WorkoutsRepositoryImpl implements WorkoutsRepository {
@@ -56,12 +57,14 @@ class WorkoutsRepositoryImpl implements WorkoutsRepository {
   }
 
   @override
-  Stream<List<Workout>> watchUserWorkouts(String userId) {
-    return _workouts
+  Stream<List<Workout>> watchUserWorkouts(String userId, {int? limit}) {
+    Query<Map<String, dynamic>> query = _workouts
         .where('userId', isEqualTo: userId)
-        .orderBy('startedAt', descending: true)
-        .snapshots()
-        .map(
+        .orderBy('startedAt', descending: true);
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+    return query.snapshots().map(
           (snapshot) => snapshot.docs
               .map((doc) => WorkoutMapper.fromMap(doc.id, doc.data()))
               .toList(),

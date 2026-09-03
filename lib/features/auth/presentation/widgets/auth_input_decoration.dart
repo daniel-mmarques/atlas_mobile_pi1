@@ -11,42 +11,45 @@ InputDecoration authInputDecoration(
   String? label,
 }) {
   final hintSize = AppResponsive.font(context, base: 15, min: 13);
+  final secondary = AppColors.textSecondary(context);
+  final border = AppColors.border(context);
+  final accent = AppColors.accentOf(context);
 
   return InputDecoration(
     hintText: hint,
     labelText: label,
     hintStyle: TextStyle(
-      color: AppColors.lightTextSecondary,
+      color: secondary,
       fontSize: hintSize,
     ),
     labelStyle: TextStyle(
-      color: AppColors.lightTextSecondary,
+      color: secondary,
       fontSize: hintSize,
     ),
-    prefixIcon: Icon(icon, color: AppColors.accent),
+    prefixIcon: Icon(icon, color: accent),
     suffixIcon: suffix,
     filled: true,
-    fillColor: AppColors.white,
+    fillColor: AppColors.surfaceSecondary(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: AppRadii.button,
-      borderSide: const BorderSide(color: AppColors.lightBorder),
+      borderSide: BorderSide(color: border),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: AppRadii.button,
-      borderSide: const BorderSide(color: AppColors.lightBorder),
+      borderSide: BorderSide(color: border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: AppRadii.button,
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+      borderSide: BorderSide(color: accent, width: 1.5),
     ),
-    errorBorder: OutlineInputBorder(
+    errorBorder: const OutlineInputBorder(
       borderRadius: AppRadii.button,
-      borderSide: const BorderSide(color: AppColors.error),
+      borderSide: BorderSide(color: AppColors.error),
     ),
-    focusedErrorBorder: OutlineInputBorder(
+    focusedErrorBorder: const OutlineInputBorder(
       borderRadius: AppRadii.button,
-      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+      borderSide: BorderSide(color: AppColors.error, width: 1.5),
     ),
     errorStyle: const TextStyle(
       color: AppColors.error,
@@ -58,7 +61,7 @@ InputDecoration authInputDecoration(
 
 TextStyle authFieldTextStyle(BuildContext context) {
   return TextStyle(
-    color: AppColors.black,
+    color: AppColors.textPrimary(context),
     fontSize: AppResponsive.font(context, base: 15, min: 14),
   );
 }

@@ -1,63 +1,63 @@
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_palette.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_theme_id.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 abstract class AppThemes {
-  static ThemeData lightTheme = _buildTheme(Brightness.light);
-  static ThemeData darkTheme = _buildTheme(Brightness.dark);
+  static final Map<AppThemeId, ThemeData> _cache = {};
 
-  static ThemeData _buildTheme(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
+  static ThemeData of(AppThemeId id) =>
+      _cache.putIfAbsent(id, () => _build(AppPalettes.of(id)));
 
-    final scaffold = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final surface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-    final component =
-        isDark ? AppColors.darkComponent : AppColors.lightComponent;
-    final onSurface =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final onSurfaceVariant =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  /// Compat: tema claro padrão.
+  static ThemeData get lightTheme => of(AppThemeId.light);
 
+  /// Compat: tema escuro AMOLED padrão.
+  static ThemeData get darkTheme => of(AppThemeId.dark);
+
+  static ThemeData _build(AppPalette palette) {
     final colorScheme = ColorScheme(
-      brightness: brightness,
-      primary: AppColors.accent,
-      onPrimary: AppColors.white,
-      secondary: component,
-      onSecondary: onSurface,
-      surface: surface,
-      onSurface: onSurface,
-      onSurfaceVariant: onSurfaceVariant,
+      brightness: palette.brightness,
+      primary: palette.accent,
+      onPrimary: palette.onAccent,
+      secondary: palette.component,
+      onSecondary: palette.textPrimary,
+      surface: palette.surface,
+      onSurface: palette.textPrimary,
+      onSurfaceVariant: palette.textSecondary,
       error: AppColors.error,
       onError: AppColors.white,
-      outline: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+      outline: palette.border,
     );
 
     return ThemeData(
       useMaterial3: true,
-      brightness: brightness,
-      scaffoldBackgroundColor: scaffold,
+      brightness: palette.brightness,
+      scaffoldBackgroundColor: palette.scaffold,
       colorScheme: colorScheme,
-      cardColor: surface,
+      cardColor: palette.surface,
       dividerColor: colorScheme.outline.withValues(alpha: 0.35),
-      textTheme: AppTypography.textTheme(brightness),
+      textTheme: AppTypography.textThemeForPalette(palette),
+      extensions: [palette],
       appBarTheme: AppBarTheme(
-        backgroundColor: scaffold,
-        foregroundColor: onSurface,
+        backgroundColor: palette.scaffold,
+        foregroundColor: palette.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.textTheme(brightness).headlineSmall,
-        systemOverlayStyle:
-            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        titleTextStyle:
+            AppTypography.textThemeForPalette(palette).headlineSmall,
+        systemOverlayStyle: palette.isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: component,
-          foregroundColor: onSurface,
+          backgroundColor: palette.component,
+          foregroundColor: palette.textPrimary,
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.button),
@@ -71,8 +71,8 @@ abstract class AppThemes {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: component,
-          foregroundColor: onSurface,
+          backgroundColor: palette.component,
+          foregroundColor: palette.textPrimary,
           elevation: 0,
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.button),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -80,26 +80,26 @@ abstract class AppThemes {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: onSurface,
+          foregroundColor: palette.textPrimary,
           side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.button),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.accent,
+          foregroundColor: palette.accent,
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: component,
-        foregroundColor: onSurface,
+        backgroundColor: palette.component,
+        foregroundColor: palette.textPrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardSm),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: component,
+        fillColor: palette.component,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -114,54 +114,66 @@ abstract class AppThemes {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadii.button,
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: palette.accent, width: 1.5),
         ),
-        hintStyle: TextStyle(color: onSurfaceVariant),
-        labelStyle: TextStyle(color: onSurfaceVariant),
+        hintStyle: TextStyle(color: palette.textSecondary),
+        labelStyle: TextStyle(color: palette.textSecondary),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: component,
-        selectedColor: AppColors.accent,
-        labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w500),
-        secondaryLabelStyle: const TextStyle(color: AppColors.white),
+        backgroundColor: palette.component,
+        selectedColor: palette.accent,
+        labelStyle: TextStyle(
+          color: palette.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        secondaryLabelStyle: TextStyle(color: palette.onAccent),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
         side: BorderSide.none,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: scaffold,
-        selectedItemColor: onSurface,
-        unselectedItemColor: onSurfaceVariant,
+        backgroundColor: palette.scaffold,
+        selectedItemColor: palette.textPrimary,
+        unselectedItemColor: palette.textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.scaffold,
+        modalBackgroundColor: palette.scaffold,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        elevation: 0,
+        showDragHandle: false,
+      ),
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: palette.surface,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.card),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: component,
-        contentTextStyle: TextStyle(color: onSurface),
+        backgroundColor: palette.component,
+        contentTextStyle: TextStyle(color: palette.textPrimary),
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardSm),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: onSurface,
-        textColor: onSurface,
+        iconColor: palette.textPrimary,
+        textColor: palette.textPrimary,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),
-      iconTheme: IconThemeData(color: onSurface, size: 24),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.accent,
+      iconTheme: IconThemeData(color: palette.textPrimary, size: 24),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: palette.accent,
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.white;
-          return onSurfaceVariant;
+          if (states.contains(WidgetState.selected)) return palette.onAccent;
+          return palette.textSecondary;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.accent;
-          return component;
+          if (states.contains(WidgetState.selected)) return palette.accent;
+          return palette.component;
         }),
       ),
       dividerTheme: DividerThemeData(

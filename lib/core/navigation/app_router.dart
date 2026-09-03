@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/repositories/user_repository.dart';
@@ -14,12 +15,8 @@ import 'package:atlas_mobile_pi1/features/messages/presentation/pages/messages_p
 import 'package:atlas_mobile_pi1/features/messages/presentation/pages/messages_scan_page.dart';
 import 'package:atlas_mobile_pi1/features/messages/presentation/pages/messages_search_page.dart';
 import 'package:atlas_mobile_pi1/features/messages/presentation/pages/new_community_page.dart';
-import 'package:atlas_mobile_pi1/features/profile/presentation/pages/profile_page.dart';
 import 'package:atlas_mobile_pi1/features/profile/presentation/pages/share_profile_page.dart';
-import 'package:atlas_mobile_pi1/features/settings/presentation/pages/settings_page.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
-import 'package:atlas_mobile_pi1/features/workouts/presentation/pages/create_routine_page.dart';
-import 'package:atlas_mobile_pi1/features/workouts/presentation/pages/search_exercise_page.dart';
 import 'package:atlas_mobile_pi1/features/workouts/presentation/pages/transition_page.dart';
 import 'package:atlas_mobile_pi1/features/workouts/presentation/pages/workout_details_page.dart';
 import 'package:atlas_mobile_pi1/features/workouts/presentation/pages/workout_page.dart';
@@ -50,8 +47,7 @@ GoRouter createAppRouter({
         return location == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
-      final isPublicAuthRoute =
-          location == AppRoutes.onboarding || location == AppRoutes.login;
+      final isPublicAuthRoute = location == AppRoutes.onboarding;
 
       if (!isLogged) {
         return isPublicAuthRoute ? null : AppRoutes.onboarding;
@@ -83,10 +79,6 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (_, _) => const OnboardingPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.login,
-        builder: (_, _) => const SignInPage(),
       ),
       GoRoute(
         path: AppRoutes.signup,
@@ -169,16 +161,6 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
-        path: AppRoutes.settings,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, _) => const SettingsPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, _) => const ProfilePage(),
-      ),
-      GoRoute(
         path: AppRoutes.profileShare,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, _) => const ShareProfilePage(),
@@ -212,23 +194,13 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
-        path: AppRoutes.exerciseSearch,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, _) => const SearchExercisePage(),
-      ),
-      GoRoute(
-        path: AppRoutes.routineNew,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, _) => const CreateRoutinePage(),
-      ),
-      GoRoute(
         path: '/workout/:id',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (_, state) {
+        builder: (context, state) {
           final workout = state.extra as Workout?;
           if (workout == null) {
-            return const Scaffold(
-              body: Center(child: Text('Treino não encontrado')),
+            return Scaffold(
+              body: Center(child: Text(context.l10n.workoutsNotFound)),
             );
           }
           return WorkoutDetailsPage(workout: workout);
@@ -237,11 +209,11 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/workout/:id/session',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (_, state) {
+        builder: (context, state) {
           final workout = state.extra as Workout?;
           if (workout == null) {
-            return const Scaffold(
-              body: Center(child: Text('Treino não encontrado')),
+            return Scaffold(
+              body: Center(child: Text(context.l10n.workoutsNotFound)),
             );
           }
           return WorkoutSessionPage(workout: workout);
@@ -250,22 +222,14 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/workout/:id/transition',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (_, state) {
+        builder: (context, state) {
           final workout = state.extra as Workout?;
           if (workout == null) {
-            return const Scaffold(
-              body: Center(child: Text('Treino não encontrado')),
+            return Scaffold(
+              body: Center(child: Text(context.l10n.workoutsNotFound)),
             );
           }
           return TransitionPage(workout: workout);
-        },
-      ),
-      GoRoute(
-        path: '/exercise/:id',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, state) {
-          final id = state.pathParameters['id'] ?? '';
-          return ExerciseDetailsPage(exerciseId: id);
         },
       ),
     ],

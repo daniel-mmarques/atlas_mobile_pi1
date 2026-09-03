@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/tiles/duration_tile.dart';
@@ -23,7 +24,7 @@ class HomeWidgetTile extends StatelessWidget {
       return HomeTileNumber(
         value: '0',
         title: instance.name,
-        subtitle: 'Not logged',
+        subtitle: context.l10n.widgetNotLogged,
       );
     }
 

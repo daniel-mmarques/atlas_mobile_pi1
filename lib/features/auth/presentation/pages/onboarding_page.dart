@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/responsive.dart';
@@ -50,11 +51,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return const SignInPage();
     }
 
+    final l10n = context.l10n;
     final short = AppResponsive.isShort(context);
     final iconSize = AppResponsive.font(context, base: 64, min: 44, max: 72);
 
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.surface(context),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -68,22 +70,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: [
                   _baseSlide(
                     icon: Icons.fitness_center,
-                    title: 'Treine com método',
-                    subtitle:
-                        'Planos estruturados para força, hipertrofia e performance.',
+                    title: l10n.onboardingTitle1,
+                    subtitle: l10n.onboardingSubtitle1,
                     iconSize: iconSize,
                   ),
                   _baseSlide(
                     icon: Icons.show_chart,
-                    title: 'Acompanhe sua evolução',
-                    subtitle:
-                        'Registre cargas, séries e veja seu progresso.',
+                    title: l10n.onboardingTitle2,
+                    subtitle: l10n.onboardingSubtitle2,
                     iconSize: iconSize,
                   ),
                   _baseSlide(
                     icon: Icons.local_fire_department,
-                    title: 'Constância gera resultado',
-                    subtitle: 'Disciplina hoje. Corpo diferente amanhã.',
+                    title: l10n.onboardingTitle3,
+                    subtitle: l10n.onboardingSubtitle3,
                     iconSize: iconSize,
                   ),
                 ],
@@ -91,8 +91,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSecondary(context),
                 borderRadius: AppRadii.authPanel,
               ),
               child: Padding(
@@ -106,7 +106,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Bem-vindo a revolução na forma de treinar',
+                      l10n.authWelcomeSlide,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: AppResponsive.font(
@@ -116,13 +116,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           max: 22,
                         ),
                         fontWeight: FontWeight.w600,
-                        color: AppColors.lightTextPrimary,
+                        color: AppColors.textPrimary(context),
                         height: 1.3,
                       ),
                     ),
                     SizedBox(height: short ? 12 : 16),
                     SlideToStartAction(
-                      text: 'Get Started',
+                      text: l10n.authGetStarted,
                       borderRadius: 100,
                       height: short ? 58 : 66,
                       onSubmit: () {
@@ -161,13 +161,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: iconSize, color: AppColors.accent),
+                  Icon(icon, size: iconSize, color: AppColors.accentOf(context)),
                   const SizedBox(height: 20),
                   Text(
                     title,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.white,
+                      color: AppColors.textPrimary(context),
                       fontSize: AppResponsive.font(
                         context,
                         base: 26,
@@ -183,7 +183,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.darkTextSecondary,
+                      color: AppColors.textSecondary(context),
                       fontSize: AppResponsive.font(
                         context,
                         base: 16,

@@ -1,3 +1,4 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
@@ -21,25 +22,26 @@ class StudentDetailPage extends StatelessWidget {
   Future<void> _assign(BuildContext context) async {
     final coachId = context.read<AuthService>().user?.uid;
     if (coachId == null) return;
+    final l10n = context.l10n;
 
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final controller = TextEditingController(text: 'Treino do coach');
+        final controller = TextEditingController(text: l10n.coachWorkout);
         return AlertDialog(
-          title: const Text('Atribuir treino'),
+          title: Text(l10n.coachAssignWorkout),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(labelText: 'Nome do treino'),
+            decoration: InputDecoration(labelText: l10n.addSheetWorkout),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('Atribuir'),
+              child: Text(l10n.coachAssign),
             ),
           ],
         );
@@ -56,7 +58,7 @@ class StudentDetailPage extends StatelessWidget {
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Treino atribuído')),
+      SnackBar(content: Text(l10n.coachAssigned)),
     );
   }
 
@@ -64,6 +66,8 @@ class StudentDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final label =
         student.name?.isNotEmpty == true ? student.name! : student.email;
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toString();
 
     return Scaffold(
       appBar: AppBar(
@@ -77,7 +81,7 @@ class StudentDetailPage extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Workout>>(
-        stream: context.read<WorkoutService>().watchUserWorkouts(student.id),
+        stream: context.read<WorkoutService>().watchUserWorkoutsList(student.id),
         builder: (context, snapshot) {
           final workouts = snapshot.data ?? [];
           final finished =
@@ -90,12 +94,12 @@ class StudentDetailPage extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               Text(
-                '${finished.length} treinos realizados',
+                l10n.coachWorkoutsCount(finished.length),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Volume semanal',
+                l10n.widgetVolumeSubtitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -113,7 +117,7 @@ class StudentDetailPage extends StatelessWidget {
                           height: h,
                           decoration: BoxDecoration(
                             color: v > 0
-                                ? AppColors.accent
+                                ? AppColors.accentOf(context)
                                 : AppColors.component(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -143,21 +147,21 @@ class StudentDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xxl),
               AppActionButton(
-                label: 'Atribuir treino',
+                label: l10n.coachAssignWorkout,
                 emphasized: true,
                 borderRadius: AppRadii.pill,
                 onTap: () => _assign(context),
               ),
               const SizedBox(height: AppSpacing.xl),
               Text(
-                'Histórico',
+                l10n.coachHistory,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.md),
               if (history.isEmpty)
                 AppCard(
                   child: Text(
-                    'Nenhum treino finalizado',
+                    l10n.workoutsNoRoutines,
                     style: TextStyle(
                       color: AppColors.textSecondary(context),
                     ),
@@ -177,7 +181,7 @@ class StudentDetailPage extends StatelessWidget {
                                 Text(w.name),
                                 Text(
                                   w.startedAt != null
-                                      ? DateFormat('dd/MM/yyyy')
+                                      ? DateFormat('dd/MM/yyyy', locale)
                                           .format(w.startedAt!)
                                       : '--',
                                   style: TextStyle(
@@ -191,7 +195,7 @@ class StudentDetailPage extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('${w.volume} kg'),
+                              Text('${w.volume} ${l10n.commonKg}'),
                               Text(
                                 w.formattedDuration,
                                 style: TextStyle(

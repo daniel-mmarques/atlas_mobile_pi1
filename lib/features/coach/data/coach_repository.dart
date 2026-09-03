@@ -23,6 +23,8 @@ abstract class CoachRepository {
 
   Stream<List<AppUser>> watchCoaches(String studentId);
 
+  Future<int> countFinishedWorkouts(String userId);
+
   Future<void> assignWorkoutToStudent({
     required String coachId,
     required String studentId,
@@ -129,17 +131,11 @@ class CoachRepositoryImpl implements CoachRepository {
         .where('status', isEqualTo: LinkStatus.active.storageName)
         .snapshots()
         .asyncMap((snapshot) async {
-      final students = <AppUser>[];
-      for (final doc in snapshot.docs) {
-        final studentId = doc.data()['studentId'] as String?;
-        if (studentId == null) continue;
-        final userSnap =
-            await _db.collection(FirestorePaths.users).doc(studentId).get();
-        if (userSnap.exists && userSnap.data() != null) {
-          students.add(AppUser.fromMap(userSnap.id, userSnap.data()!));
-        }
-      }
-      return students;
+      final ids = snapshot.docs
+          .map((doc) => doc.data()['studentId'] as String?)
+          .whereType<String>()
+          .toList();
+      return _fetchUsersByIds(ids);
     });
   }
 
@@ -151,18 +147,42 @@ class CoachRepositoryImpl implements CoachRepository {
         .where('status', isEqualTo: LinkStatus.active.storageName)
         .snapshots()
         .asyncMap((snapshot) async {
-      final coaches = <AppUser>[];
-      for (final doc in snapshot.docs) {
-        final coachId = doc.data()['coachId'] as String?;
-        if (coachId == null) continue;
-        final userSnap =
-            await _db.collection(FirestorePaths.users).doc(coachId).get();
-        if (userSnap.exists && userSnap.data() != null) {
-          coaches.add(AppUser.fromMap(userSnap.id, userSnap.data()!));
-        }
-      }
-      return coaches;
+      final ids = snapshot.docs
+          .map((doc) => doc.data()['coachId'] as String?)
+          .whereType<String>()
+          .toList();
+      return _fetchUsersByIds(ids);
     });
+  }
+
+  /// Firestore `whereIn` supports at most 30 ids per query.
+  Future<List<AppUser>> _fetchUsersByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final unique = ids.toSet().toList();
+    final users = <AppUser>[];
+    const chunkSize = 30;
+    for (var i = 0; i < unique.length; i += chunkSize) {
+      final end = (i + chunkSize < unique.length) ? i + chunkSize : unique.length;
+      final chunk = unique.sublist(i, end);
+      final snap = await _db
+          .collection(FirestorePaths.users)
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final doc in snap.docs) {
+        users.add(AppUser.fromMap(doc.id, doc.data()));
+      }
+    }
+    return users;
+  }
+
+  @override
+  Future<int> countFinishedWorkouts(String userId) async {
+    final snap = await _db
+        .collection(FirestorePaths.workouts)
+        .where('userId', isEqualTo: userId)
+        .limit(100)
+        .get();
+    return snap.docs.where((doc) => doc.data()['finishedAt'] != null).length;
   }
 
   @override

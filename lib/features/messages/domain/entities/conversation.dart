@@ -5,16 +5,27 @@ class ConversationParticipant {
   const ConversationParticipant({
     required this.userId,
     required this.name,
+    this.username = '',
     this.photoUrl = '',
   });
 
   final String userId;
   final String name;
+  final String username;
   final String photoUrl;
+
+  String get displayLabel {
+    if (username.trim().isNotEmpty) {
+      final u = username.trim();
+      return u.startsWith('@') ? u : '@$u';
+    }
+    return name.isNotEmpty ? name : 'User';
+  }
 
   Map<String, dynamic> toMap() => {
         'userId': userId,
         'name': name,
+        'username': username,
         'photoUrl': photoUrl,
       };
 
@@ -22,6 +33,7 @@ class ConversationParticipant {
     return ConversationParticipant(
       userId: map['userId'] as String? ?? '',
       name: map['name'] as String? ?? 'User',
+      username: map['username'] as String? ?? '',
       photoUrl: map['photoUrl'] as String? ?? '',
     );
   }
@@ -63,7 +75,7 @@ class Conversation {
       return title.isNotEmpty ? title : 'Comunidade';
     }
     for (final peer in participants) {
-      if (peer.userId != currentUserId) return peer.name;
+      if (peer.userId != currentUserId) return peer.displayLabel;
     }
     return title.isNotEmpty ? title : 'Conversa';
   }

@@ -1,4 +1,5 @@
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,7 +12,14 @@ abstract class AppTypography {
     final secondary = brightness == Brightness.dark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
+    return _build(primary, secondary);
+  }
 
+  static TextTheme textThemeForPalette(AppPalette palette) {
+    return _build(palette.textPrimary, palette.textSecondary);
+  }
+
+  static TextTheme _build(Color primary, Color secondary) {
     final base = GoogleFonts.interTextTheme();
 
     return base.copyWith(
@@ -108,7 +116,7 @@ abstract class AppTypography {
     );
   }
 
-  /// Título das abas principais (Home, Workouts, Calendar).
+  /// Título das abas principais e sheets (Home, Workouts, Settings…).
   static TextStyle shellTitle(BuildContext context) {
     return GoogleFonts.inter(
       fontSize: 28,
@@ -119,6 +127,9 @@ abstract class AppTypography {
     );
   }
 
+  /// Alias semântico — mesmo peso visual do shell title.
+  static TextStyle sheetTitle(BuildContext context) => shellTitle(context);
+
   static TextStyle pageTitle(BuildContext context) {
     return GoogleFonts.inter(
       fontSize: 24,
@@ -128,10 +139,46 @@ abstract class AppTypography {
     );
   }
 
+  static TextStyle sectionTitle(BuildContext context) {
+    return GoogleFonts.inter(
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.2,
+      color: AppColors.textPrimary(context),
+    );
+  }
+
+  static TextStyle cardTitle(BuildContext context) {
+    return GoogleFonts.inter(
+      fontSize: 22,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.4,
+      height: 1.15,
+      color: AppColors.textPrimary(context),
+    );
+  }
+
   static TextStyle meta(BuildContext context) {
     return GoogleFonts.inter(
       fontSize: 13,
       fontWeight: FontWeight.w400,
+      color: AppColors.textSecondary(context),
+    );
+  }
+
+  static TextStyle body(BuildContext context) {
+    return GoogleFonts.inter(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      height: 1.4,
+      color: AppColors.textPrimary(context),
+    );
+  }
+
+  static TextStyle caption(BuildContext context) {
+    return GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
       color: AppColors.textSecondary(context),
     );
   }

@@ -1,34 +1,32 @@
+import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
-import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
+import 'package:atlas_mobile_pi1/features/settings/presentation/widgets/theme_picker.dart';
+import 'package:atlas_mobile_pi1/features/workouts/domain/enums/set_intensity_mode.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/preferences_service.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
+import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 Future<void> showSettingsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showAtlasSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
     builder: (_) {
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.95,
-        minChildSize: 0.95,
-        maxChildSize: 0.95,
+        initialChildSize: AppSpacing.sheetInitial,
+        minChildSize: AppSpacing.sheetMin,
+        maxChildSize: AppSpacing.sheetMax,
+        shouldCloseOnMinExtent: true,
         builder: (_, scrollController) {
           return SettingsContent(
             scrollController: scrollController,
-            asSheet: true,
           );
         },
       );
@@ -36,26 +34,13 @@ Future<void> showSettingsSheet(BuildContext context) {
   );
 }
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(child: SettingsContent(asSheet: false)),
-    );
-  }
-}
-
 class SettingsContent extends StatelessWidget {
   const SettingsContent({
     super.key,
     this.scrollController,
-    this.asSheet = false,
   });
 
   final ScrollController? scrollController;
-  final bool asSheet;
 
   Future<void> _cycleLanguage(PreferencesService preferences) async {
     final current = preferences.currentLanguage.languageCode;
@@ -69,109 +54,68 @@ class SettingsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final preferences = context.watch<PreferencesService>();
     final auth = context.watch<AuthService>();
     final languageSubtitle = switch (preferences.currentLanguage.languageCode) {
-      'en' => 'English',
-      'es' => 'Español',
-      _ => 'Português',
+      'en' => l10n.langEnglish,
+      'es' => l10n.langSpanish,
+      _ => l10n.langPortuguese,
     };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (asSheet) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textSecondary(context).withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(50),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-        ],
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (asSheet)
-                IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  icon: Icon(
-                    Icons.arrow_downward_rounded,
-                    size: 32,
-                    color: AppColors.textPrimary(context),
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              SizedBox(height: asSheet ? AppSpacing.xl : AppSpacing.sm),
-              Text(
-                'Settings',
-                style: AppTypography.pageTitle(context).copyWith(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.8,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'How to track workouts and metrics',
-                style: AppTypography.meta(context).copyWith(
-                  fontSize: 15,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
+        AtlasSheetChrome(
+          title: l10n.settingsTitle,
+          subtitle: l10n.settingsSubtitle,
+          onNav: () => Navigator.of(context).maybePop(),
+          isDismiss: true,
         ),
-        const SizedBox(height: AppSpacing.xxl),
+        const SizedBox(height: AppSpacing.sectionGap),
         Expanded(
           child: ListView(
             controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.pageHorizontal,
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.sheetPaddingH,
               0,
-              AppSpacing.pageHorizontal,
-              AppSpacing.xxxl,
+              AppSpacing.sheetPaddingH,
+              AppSpacing.sheetPaddingB,
             ),
             children: [
               _SettingsRow(
                 iconLabel: preferences.isImperialSystem ? 'lb' : 'kg',
-                title: 'Preferred unit',
+                title: l10n.settingsPreferredUnit,
                 subtitle: preferences.isImperialSystem
-                    ? 'Pounds and miles'
-                    : 'Kilos and meters',
+                    ? l10n.settingsUnitImperial
+                    : l10n.settingsUnitMetric,
                 onTap: () => preferences.toggleUnitSystem(),
               ),
+              const SizedBox(height: AppSpacing.md),
+              const ThemePicker(),
+              const SizedBox(height: AppSpacing.lg),
               _SettingsRow(
-                icon: preferences.isDark
-                    ? Icons.dark_mode_outlined
-                    : Icons.light_mode_outlined,
-                title: 'Appearance',
-                subtitle: preferences.isDark ? 'Dark' : 'Light',
-                onTap: () => preferences.toggleThemeMode(),
+                icon: Icons.speed_outlined,
+                title: l10n.settingsIntensityTitle,
+                subtitle: switch (preferences.setIntensityMode) {
+                  SetIntensityMode.none => l10n.settingsIntensitySubtitleNone,
+                  SetIntensityMode.rpe => l10n.settingsIntensitySubtitleRpe,
+                  SetIntensityMode.rir => l10n.settingsIntensitySubtitleRir,
+                },
+                onTap: () => preferences.cycleSetIntensityMode(),
               ),
               _SettingsRow(
                 icon: Icons.language_outlined,
-                title: 'Language',
+                title: l10n.settingsLanguage,
                 subtitle: languageSubtitle,
                 onTap: () => _cycleLanguage(preferences),
               ),
               _SettingsRow(
                 icon: Icons.fitness_center_outlined,
-                title: 'Modo coach',
+                title: l10n.settingsCoachMode,
                 subtitle: auth.isCoach
-                    ? 'Ativo — área do coach disponível'
-                    : 'Desativado',
+                    ? l10n.settingsCoachActive
+                    : l10n.settingsCoachInactive,
                 onTap: () async {
                   await auth.setRole(
                     auth.isCoach ? UserRole.student : UserRole.coach,
@@ -181,17 +125,17 @@ class SettingsContent extends StatelessWidget {
               if (auth.isCoach)
                 _SettingsRow(
                   icon: Icons.groups_outlined,
-                  title: 'Área do coach',
-                  subtitle: 'Alunos e vínculos',
+                  title: l10n.settingsCoachArea,
+                  subtitle: l10n.settingsCoachAreaSubtitle,
                   onTap: () {
-                    if (asSheet) Navigator.of(context).maybePop();
+                    Navigator.of(context).maybePop();
                     context.push(AppRoutes.coach);
                   },
                 ),
               _SettingsRow(
                 icon: Icons.logout_rounded,
-                title: 'Logout',
-                subtitle: 'Sign out of your account',
+                title: l10n.settingsLogout,
+                subtitle: l10n.settingsLogoutSubtitle,
                 destructive: true,
                 onTap: () async {
                   await Navigator.of(context).maybePop();
@@ -235,9 +179,9 @@ class _SettingsRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadii.md,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md + 2),
         child: Row(
           children: [
             Container(

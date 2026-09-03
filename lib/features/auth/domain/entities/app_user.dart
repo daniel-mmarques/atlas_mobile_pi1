@@ -1,11 +1,13 @@
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/activity_level.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/gender.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/username.dart';
 
 class AppUser {
   const AppUser({
     required this.id,
     required this.email,
+    this.username,
     this.name,
     this.gender,
     this.height,
@@ -19,6 +21,7 @@ class AppUser {
 
   final String id;
   final String email;
+  final String? username;
   final String? name;
   final Gender? gender;
   final double? height;
@@ -31,7 +34,20 @@ class AppUser {
 
   bool get isCoach => role == UserRole.coach;
 
+  /// Display handle with leading `@`. Falls back to `@…` when unset.
+  String get handle => Username.handle(username);
+
+  /// Preferred public label: @username, then name, then email.
+  String get displayLabel {
+    final u = username?.trim();
+    if (u != null && u.isNotEmpty) return Username.handle(u);
+    final n = name?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    return email;
+  }
+
   AppUser copyWith({
+    String? username,
     String? name,
     Gender? gender,
     double? height,
@@ -44,6 +60,7 @@ class AppUser {
     return AppUser(
       id: id,
       email: email,
+      username: username ?? this.username,
       name: name ?? this.name,
       gender: gender ?? this.gender,
       height: height ?? this.height,
@@ -60,6 +77,8 @@ class AppUser {
     return {
       'uid': id,
       'email': email,
+      'username': username,
+      'usernameLower': username?.toLowerCase(),
       'name': name,
       'gender': gender?.name,
       'height': height,
@@ -76,6 +95,7 @@ class AppUser {
     return AppUser(
       id: id,
       email: data['email'] as String? ?? '',
+      username: data['username'] as String?,
       name: data['name'] as String?,
       gender: Gender.fromStorage(data['gender'] as String?),
       height: (data['height'] as num?)?.toDouble(),
