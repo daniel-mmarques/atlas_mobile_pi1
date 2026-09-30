@@ -1,4 +1,3 @@
-/// Catálogo local seed (sem RapidAPI).
 const seedExercises = <Map<String, String>>[
   {'id': 'squat', 'name': 'Agachamento'},
   {'id': 'bench', 'name': 'Supino reto'},

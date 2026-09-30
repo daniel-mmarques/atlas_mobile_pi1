@@ -4,17 +4,15 @@ import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
 import 'package:atlas_mobile_pi1/features/feed/data/posts_repository.dart';
-import 'package:atlas_mobile_pi1/features/workouts/data/seed_exercises.dart';
 import 'package:atlas_mobile_pi1/features/workouts/data/templates_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/upsert_routine_from_workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/presentation/controllers/live_workout_controller.dart';
+import 'package:atlas_mobile_pi1/features/workouts/presentation/create_routine/widgets/exercise_library_sheet.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
 import 'package:atlas_mobile_pi1/ui/components/app_action_button.dart';
-import 'package:atlas_mobile_pi1/ui/components/atlas_sheet.dart';
-import 'package:atlas_mobile_pi1/ui/components/atlas_sheet_chrome.dart';
 import 'package:atlas_mobile_pi1/ui/components/platinum_icon_button.dart';
 import 'package:atlas_mobile_pi1/ui/widgets/exercise_card.dart';
 import 'package:flutter/material.dart';
@@ -108,44 +106,38 @@ class _LiveWorkoutView extends StatelessWidget {
     if (!context.mounted) return;
 
     final workout = controller.workout;
-    if (workout.exercises.isNotEmpty) {
-      final linkedId = workout.templateId;
-      if (linkedId != null && linkedId.isNotEmpty) {
+    final hasTemplate = workout.templateId != null &&
+        workout.templateId!.isNotEmpty;
+
+    // Treino com rotina: o molde não muda. Só oferece "salvar como rotina"
+    // para treinos avulsos (sem template).
+    if (workout.exercises.isNotEmpty && !hasTemplate) {
+      final shouldSave = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.routineSaveAsTitle),
+          content: Text(l10n.routineSaveAsBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.routineSaveAsConfirm),
+            ),
+          ],
+        ),
+      );
+      if (shouldSave == true) {
         await upsertRoutineFromWorkout(
           workout: workout,
           templates: templates,
+          createIfMissing: true,
         );
         messenger.showSnackBar(
-          SnackBar(content: Text(l10n.routineUpdated)),
+          SnackBar(content: Text(l10n.routineSaved)),
         );
-      } else {
-        final shouldSave = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.routineSaveAsTitle),
-            content: Text(l10n.routineSaveAsBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.routineSaveAsConfirm),
-              ),
-            ],
-          ),
-        );
-        if (shouldSave == true) {
-          await upsertRoutineFromWorkout(
-            workout: workout,
-            templates: templates,
-            createIfMissing: true,
-          );
-          messenger.showSnackBar(
-            SnackBar(content: Text(l10n.routineSaved)),
-          );
-        }
       }
     }
 
@@ -336,54 +328,20 @@ class _AddExerciseButton extends StatelessWidget {
       icon: Icons.add,
       color: AppColors.component(context),
       onTap: () async {
-        final selected = await showAtlasSheet<Map<String, String>>(
-          context: context,
-          builder: (sheetContext) {
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: AppSpacing.sheetMinContent,
-              minChildSize: AppSpacing.sheetMin,
-              maxChildSize: AppSpacing.sheetMax,
-              shouldCloseOnMinExtent: true,
-              builder: (_, scrollController) {
-                return Column(
-                  children: [
-                    AtlasSheetChrome(
-                      title: l10n.workoutsAddExercise,
-                      onNav: () => Navigator.pop(sheetContext),
-                      isDismiss: true,
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: EdgeInsets.fromLTRB(
-                          AppSpacing.sheetPaddingH,
-                          AppSpacing.sm,
-                          AppSpacing.sheetPaddingH,
-                          AppSpacing.sheetPaddingB,
-                        ),
-                        itemCount: seedExercises.length,
-                        itemBuilder: (context, index) {
-                          final e = seedExercises[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(e['name']!),
-                            onTap: () => Navigator.pop(sheetContext, e),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-        if (selected == null || !context.mounted) return;
-        context.read<LiveWorkoutController>().addExercise(
-              exerciseId: selected['id'] ?? const Uuid().v4(),
-              name: selected['name']!,
-            );
+        final selected = await showExercisePicker(context);
+        if (selected == null || selected.isEmpty || !context.mounted) return;
+        final controller = context.read<LiveWorkoutController>();
+        for (final item in selected) {
+          controller.addExercise(
+            exerciseId: item.id.isEmpty ? const Uuid().v4() : item.id,
+            name: item.name,
+            imageUrl: item.imageUrl,
+            videoUrl: item.videoUrl,
+            bodyPart: item.primaryBodyPart,
+            target: item.primaryTarget,
+            equipment: item.primaryEquipment,
+          );
+        }
       },
     );
   }

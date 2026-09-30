@@ -50,6 +50,7 @@ class RoutineCard extends StatelessWidget {
     final estimate = estimateMinutes(template);
 
     return AppCard(
+      color: AppColors.component(context),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
         AppSpacing.lg + 2,

@@ -62,7 +62,7 @@ class PreferencesRepository {
     );
     await _sharedPreferences.setBool(
       PreferencesKeys.themeMode,
-      id != AppThemeId.light && id != AppThemeId.sunset,
+      id.isDark,
     );
   }
 

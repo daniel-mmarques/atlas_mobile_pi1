@@ -2,6 +2,8 @@ abstract class AppRoutes {
   static const splash = '/splash';
   static const onboarding = '/onboarding';
   static const signup = '/signup';
+  static const forgotPassword = '/forgot-password';
+  static const verifyEmail = '/verify-email';
   static const home = '/home';
   static const calendar = '/calendar';
   static const workouts = '/workouts';

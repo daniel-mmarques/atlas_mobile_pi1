@@ -1,6 +1,5 @@
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/enums/template_schedule_mode.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WorkoutTemplate {
   const WorkoutTemplate({
@@ -22,7 +21,6 @@ class WorkoutTemplate {
   final String name;
   final List<Exercise> exercises;
   final String notes;
-  /// Descanso padrão do treino (aplicado a novos exercícios).
   final int defaultRestSeconds;
   final TemplateScheduleMode scheduleMode;
   final List<int>? weekdays;
@@ -58,48 +56,5 @@ class WorkoutTemplate {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
-  }
-
-  Map<String, dynamic> toMap() => {
-        'userId': userId,
-        'name': name,
-        'exercises': exercises.map((e) => e.toMap()).toList(),
-        'notes': notes,
-        'defaultRestSeconds': defaultRestSeconds,
-        'scheduleMode': scheduleMode.toJson(),
-        'weekdays': scheduleMode == TemplateScheduleMode.weekdays
-            ? weekdays
-            : null,
-        'restDaysBetween': scheduleMode == TemplateScheduleMode.frequency
-            ? restDaysBetween
-            : null,
-        if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-        if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
-      };
-
-  factory WorkoutTemplate.fromMap(String id, Map<String, dynamic> map) {
-    return WorkoutTemplate(
-      id: id,
-      userId: map['userId'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      exercises: (map['exercises'] as List<dynamic>? ?? [])
-          .map((e) => Exercise.fromMap(Map<String, dynamic>.from(e as Map)))
-          .toList(),
-      notes: map['notes'] as String? ?? '',
-      defaultRestSeconds: (map['defaultRestSeconds'] as num?)?.toInt() ?? 90,
-      scheduleMode: TemplateScheduleMode.fromJson(map['scheduleMode'] as String?),
-      weekdays: (map['weekdays'] as List<dynamic>?)
-          ?.map((e) => (e as num).toInt())
-          .toList(),
-      restDaysBetween: (map['restDaysBetween'] as num?)?.toInt(),
-      createdAt: _readDate(map['createdAt']),
-      updatedAt: _readDate(map['updatedAt']),
-    );
-  }
-
-  static DateTime? _readDate(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return null;
   }
 }

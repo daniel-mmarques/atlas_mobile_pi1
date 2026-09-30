@@ -7,7 +7,6 @@ import 'package:atlas_mobile_pi1/core/theme/responsive.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/validators/sign_up_validators.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/widgets/auth_input_decoration.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -78,11 +77,6 @@ class _SignInPageState extends State<SignInPage> {
           );
 
       if (!mounted) return;
-
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        context.go(AppRoutes.signup);
-      }
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,7 +262,14 @@ class _SignInPageState extends State<SignInPage> {
                               Align(
                                 alignment: Alignment.center,
                                 child: TextButton(
-                                  onPressed: () {},
+                                  onPressed: loading
+                                      ? null
+                                      : () {
+                                          context.push(
+                                            AppRoutes.forgotPassword,
+                                            extra: _emailController.text.trim(),
+                                          );
+                                        },
                                   child: Text(
                                     l10n.authForgotPassword,
                                     style: TextStyle(

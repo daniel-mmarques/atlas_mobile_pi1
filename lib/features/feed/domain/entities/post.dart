@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Post {
   const Post({
     required this.id,
@@ -33,23 +31,5 @@ class Post {
     final u = username.trim();
     if (u.isNotEmpty) return u.startsWith('@') ? u : '@$u';
     return userName.isNotEmpty ? userName : 'User';
-  }
-
-  factory Post.fromMap(String id, Map<String, dynamic> map) {
-    final createdAt = map['createdAt'];
-    return Post(
-      id: id,
-      userId: map['userId'] as String? ?? '',
-      userName: map['userName'] as String? ?? 'User',
-      username: map['username'] as String? ?? '',
-      userPhotoUrl: map['userPhotoUrl'] as String? ?? '',
-      caption: map['caption'] as String? ?? '',
-      imageUrl: map['imageUrl'] as String? ?? '',
-      likes: (map['likes'] as num?)?.toInt() ?? 0,
-      comments: (map['comments'] as num?)?.toInt() ?? 0,
-      createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
-      isPublic: map['isPublic'] as bool? ?? true,
-      volume: (map['volume'] as num?)?.toInt() ?? 0,
-    );
   }
 }

@@ -1,0 +1,366 @@
+# ---------- Users ----------
+
+mutation UpsertUser(
+  $id: String!
+  $email: String!
+  $name: String
+  $nameLower: String
+  $role: String
+) @auth(level: USER) {
+  user_upsert(
+    data: {
+      id: $id
+      email: $email
+      name: $name
+      nameLower: $nameLower
+      role: $role
+    }
+  )
+}
+
+mutation UpdateUserName($id: String!, $name: String!, $nameLower: String!)
+@auth(level: USER) {
+  user_update(
+    id: $id
+    data: { name: $name, nameLower: $nameLower }
+  )
+}
+
+mutation CompleteUserProfile(
+  $id: String!
+  $name: String!
+  $nameLower: String!
+  $username: String!
+  $birthDate: Timestamp!
+  $gender: String!
+  $height: Float!
+  $weight: Float!
+  $activityLevel: String!
+) @auth(level: USER) {
+  user_update(
+    id: $id
+    data: {
+      name: $name
+      nameLower: $nameLower
+      username: $username
+      birthDate: $birthDate
+      gender: $gender
+      height: $height
+      weight: $weight
+      activityLevel: $activityLevel
+      profileCompleted: true
+    }
+  )
+}
+
+mutation ClaimUsername(
+  $id: String!
+  $username: String!
+) @auth(level: USER) {
+  user_update(
+    id: $id
+    data: { username: $username }
+  )
+}
+
+mutation UpdateUserRole($id: String!, $role: String!) @auth(level: USER) {
+  user_update(id: $id, data: { role: $role })
+}
+
+mutation UpdateUserBanner(
+  $id: String!
+  $bannerPreset: String
+  $bannerUrl: String
+) @auth(level: USER) {
+  user_update(
+    id: $id
+    data: { bannerPreset: $bannerPreset, bannerUrl: $bannerUrl }
+  )
+}
+
+mutation UpdateUserProfile(
+  $id: String!
+  $name: String!
+  $nameLower: String!
+  $username: String!
+  $birthDate: Timestamp!
+  $gender: String!
+  $height: Float!
+  $weight: Float!
+  $activityLevel: String!
+  $photoUrl: String
+) @auth(level: USER) {
+  user_update(
+    id: $id
+    data: {
+      name: $name
+      nameLower: $nameLower
+      username: $username
+      birthDate: $birthDate
+      gender: $gender
+      height: $height
+      weight: $weight
+      activityLevel: $activityLevel
+      photoUrl: $photoUrl
+    }
+  )
+}
+
+# ---------- Workouts ----------
+
+mutation CreateWorkout(
+  $id: UUID!
+  $userId: String!
+  $name: String!
+  $startedAt: Timestamp
+  $exercisesJson: Any
+  $volume: Int
+  $isPublic: Boolean
+  $assignedByCoachId: String
+  $source: Int
+  $templateId: String
+) @auth(level: USER) {
+  workout_insert(
+    data: {
+      id: $id
+      user: { id: $userId }
+      name: $name
+      startedAt: $startedAt
+      exercisesJson: $exercisesJson
+      volume: $volume
+      isPublic: $isPublic
+      assignedByCoachId: $assignedByCoachId
+      source: $source
+      templateId: $templateId
+    }
+  )
+}
+
+mutation UpsertWorkout(
+  $id: UUID!
+  $userId: String!
+  $name: String!
+  $startedAt: Timestamp
+  $finishedAt: Timestamp
+  $exercisesJson: Any
+  $volume: Int!
+  $isPublic: Boolean!
+  $assignedByCoachId: String
+  $source: Int!
+  $templateId: String
+) @auth(level: USER) {
+  workout_upsert(
+    data: {
+      id: $id
+      user: { id: $userId }
+      name: $name
+      startedAt: $startedAt
+      finishedAt: $finishedAt
+      exercisesJson: $exercisesJson
+      volume: $volume
+      isPublic: $isPublic
+      assignedByCoachId: $assignedByCoachId
+      source: $source
+      templateId: $templateId
+    }
+  )
+}
+
+mutation DeleteWorkout($id: UUID!) @auth(level: USER) {
+  workout_delete(id: $id)
+}
+
+mutation AssignWorkoutToStudent(
+  $id: UUID!
+  $studentId: String!
+  $name: String!
+  $startedAt: Timestamp!
+  $coachId: String!
+  $source: Int!
+) @auth(level: USER) {
+  workout_insert(
+    data: {
+      id: $id
+      user: { id: $studentId }
+      name: $name
+      startedAt: $startedAt
+      exercisesJson: null
+      volume: 0
+      isPublic: true
+      assignedByCoachId: $coachId
+      source: $source
+    }
+  )
+}
+
+# ---------- Templates ----------
+
+mutation UpsertTemplate(
+  $id: UUID!
+  $userId: String!
+  $name: String!
+  $exercisesJson: Any
+  $notes: String!
+  $defaultRestSeconds: Int!
+  $scheduleMode: String!
+  $weekdaysJson: Any
+  $restDaysBetween: Int
+  $createdAt: Timestamp!
+  $updatedAt: Timestamp!
+) @auth(level: USER) {
+  template_upsert(
+    data: {
+      id: $id
+      user: { id: $userId }
+      name: $name
+      exercisesJson: $exercisesJson
+      notes: $notes
+      defaultRestSeconds: $defaultRestSeconds
+      scheduleMode: $scheduleMode
+      weekdaysJson: $weekdaysJson
+      restDaysBetween: $restDaysBetween
+      createdAt: $createdAt
+      updatedAt: $updatedAt
+    }
+  )
+}
+
+mutation DeleteTemplate($id: UUID!) @auth(level: USER) {
+  template_delete(id: $id)
+}
+
+# ---------- Posts ----------
+
+mutation CreatePost(
+  $userId: String!
+  $caption: String!
+  $volume: Int!
+  $isPublic: Boolean!
+) @auth(level: USER) {
+  post_insert(
+    data: {
+      user: { id: $userId }
+      caption: $caption
+      volume: $volume
+      isPublic: $isPublic
+      likes: 0
+      comments: 0
+      imageUrl: ""
+    }
+  )
+}
+
+# ---------- Conversations ----------
+
+mutation UpsertConversation(
+  $id: String!
+  $type: String!
+  $title: String!
+  $titleLower: String
+  $lastMessage: String
+  $lastSenderName: String
+  $createdBy: String
+  $inviteToken: String
+) @auth(level: USER) {
+  conversation_upsert(
+    data: {
+      id: $id
+      type: $type
+      title: $title
+      titleLower: $titleLower
+      lastMessage: $lastMessage
+      lastSenderName: $lastSenderName
+      createdBy: $createdBy
+      inviteToken: $inviteToken
+    }
+  )
+}
+
+mutation UpdateConversationLastMessage(
+  $id: String!
+  $lastMessage: String!
+  $lastSenderName: String!
+  $updatedAt: Timestamp!
+) @auth(level: USER) {
+  conversation_update(
+    id: $id
+    data: {
+      lastMessage: $lastMessage
+      lastSenderName: $lastSenderName
+      updatedAt: $updatedAt
+    }
+  )
+}
+
+mutation AddConversationMember(
+  $conversationId: String!
+  $userId: String!
+) @auth(level: USER) {
+  conversationMember_upsert(
+    data: {
+      conversation: { id: $conversationId }
+      user: { id: $userId }
+    }
+  )
+}
+
+mutation SendMessage(
+  $conversationId: String!
+  $text: String!
+  $senderId: String!
+  $senderName: String!
+  $createdAt: Timestamp!
+  $expiresAt: Timestamp
+) @auth(level: USER) {
+  message_insert(
+    data: {
+      conversation: { id: $conversationId }
+      text: $text
+      senderId: $senderId
+      senderName: $senderName
+      createdAt: $createdAt
+      expiresAt: $expiresAt
+    }
+  )
+}
+
+mutation DeleteMessage($id: UUID!) @auth(level: USER) {
+  message_delete(id: $id)
+}
+
+# ---------- Coach ----------
+
+mutation CreateLinkInvitation(
+  $token: String!
+  $creatorId: String!
+  $creatorRole: String!
+  $expiresAt: Timestamp!
+) @auth(level: USER) {
+  linkInvitation_insert(
+    data: {
+      token: $token
+      creatorId: $creatorId
+      creatorRole: $creatorRole
+      status: "pending"
+      expiresAt: $expiresAt
+    }
+  )
+}
+
+mutation UpdateLinkInvitationStatus($token: String!, $status: String!)
+@auth(level: USER) {
+  linkInvitation_update(key: { token: $token }, data: { status: $status })
+}
+
+mutation CreateCoachLink(
+  $coachId: String!
+  $studentId: String!
+) @auth(level: USER) {
+  coachLink_insert(
+    data: {
+      coachId: $coachId
+      studentId: $studentId
+      status: "active"
+    }
+  )
+}

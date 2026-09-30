@@ -1,17 +1,20 @@
+import 'package:atlas_mobile_pi1/app.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_router.dart';
 import 'package:atlas_mobile_pi1/data/datasources/local/preferences/repository_preferences.dart';
 import 'package:atlas_mobile_pi1/features/auth/data/repositories/user_repository_impl.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/repositories/user_repository.dart';
 import 'package:atlas_mobile_pi1/features/coach/data/coach_repository.dart';
-import 'package:atlas_mobile_pi1/features/messages/data/conversations_repository.dart';
 import 'package:atlas_mobile_pi1/features/feed/data/posts_repository.dart';
+import 'package:atlas_mobile_pi1/features/messages/data/conversations_repository.dart';
+import 'package:atlas_mobile_pi1/features/workouts/data/exercise_db_api_client.dart';
+import 'package:atlas_mobile_pi1/features/workouts/data/exercises_catalog_cache.dart';
+import 'package:atlas_mobile_pi1/features/workouts/data/exercises_catalog_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/data/templates_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/data/workouts_repository.dart';
 import 'package:atlas_mobile_pi1/firebase_options.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/preferences_service.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
-import 'package:atlas_mobile_pi1/app.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +33,12 @@ Future<void> main() async {
   final coachRepository = CoachRepositoryImpl();
   final workoutService = WorkoutService(workoutsRepository);
   final preferencesService = PreferencesService(PreferencesRepository.instance);
+  final exercisesCatalogRepository = ExercisesCatalogRepository(
+    api: ExerciseDbApiClient(),
+    cache: ExercisesCatalogCache(
+      PreferencesRepository.instance.sharedPreferences,
+    ),
+  );
 
   final authService = AuthService(usersRepository: usersRepository).listen();
   final router = createAppRouter(
@@ -47,6 +56,9 @@ Future<void> main() async {
         Provider<ConversationsRepository>.value(value: conversationsRepository),
         Provider<CoachRepository>.value(value: coachRepository),
         Provider<WorkoutService>.value(value: workoutService),
+        Provider<ExercisesCatalogRepository>.value(
+          value: exercisesCatalogRepository,
+        ),
         ChangeNotifierProvider<PreferencesService>.value(
           value: preferencesService,
         ),

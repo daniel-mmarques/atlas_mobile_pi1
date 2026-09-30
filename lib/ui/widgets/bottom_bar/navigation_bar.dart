@@ -31,7 +31,7 @@ class NavigationBarWidget extends StatelessWidget {
           AppSpacing.lg,
           0,
           AppSpacing.lg,
-          AppSpacing.sm,
+          AppSpacing.xs,
         ),
         child: SizedBox(
           height: AppSpacing.navHeight,

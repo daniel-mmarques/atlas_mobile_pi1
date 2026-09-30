@@ -1,0 +1,5 @@
+connectorId: atlas
+generate:
+  dartSdk:
+    outputDir: ../../lib/dataconnect_generated
+    package: atlas_dataconnect

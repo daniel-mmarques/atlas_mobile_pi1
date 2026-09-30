@@ -2,9 +2,12 @@ import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/repositories/user_repository.dart';
+import 'package:atlas_mobile_pi1/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/pages/sign_up_page.dart';
+import 'package:atlas_mobile_pi1/features/auth/presentation/pages/verify_email_page.dart';
+import 'package:atlas_mobile_pi1/features/auth/presentation/widgets/auth_theme.dart';
 import 'package:atlas_mobile_pi1/features/calendar/presentation/pages/calendar_history_page.dart';
 import 'package:atlas_mobile_pi1/features/coach/presentation/pages/coach_dashboard_page.dart';
 import 'package:atlas_mobile_pi1/features/coach/presentation/pages/student_detail_page.dart';
@@ -40,6 +43,7 @@ GoRouter createAppRouter({
     redirect: (context, state) {
       final isLoading = authService.isLoading;
       final isLogged = authService.isLogged;
+      final needsEmailVerification = authService.needsEmailVerification;
       final needsProfileSetup = authService.needsProfileSetup;
       final location = state.matchedLocation;
 
@@ -47,18 +51,30 @@ GoRouter createAppRouter({
         return location == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
-      final isPublicAuthRoute = location == AppRoutes.onboarding;
+      const publicAuthRoutes = {
+        AppRoutes.onboarding,
+        AppRoutes.forgotPassword,
+      };
 
       if (!isLogged) {
-        return isPublicAuthRoute ? null : AppRoutes.onboarding;
+        return publicAuthRoutes.contains(location)
+            ? null
+            : AppRoutes.onboarding;
+      }
+
+      if (needsEmailVerification) {
+        return location == AppRoutes.verifyEmail
+            ? null
+            : AppRoutes.verifyEmail;
       }
 
       if (needsProfileSetup) {
         return location == AppRoutes.signup ? null : AppRoutes.signup;
       }
 
-      if (isPublicAuthRoute ||
+      if (publicAuthRoutes.contains(location) ||
           location == AppRoutes.signup ||
+          location == AppRoutes.verifyEmail ||
           location == AppRoutes.splash) {
         return AppRoutes.home;
       }
@@ -81,15 +97,28 @@ GoRouter createAppRouter({
         builder: (_, _) => const OnboardingPage(),
       ),
       GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (_, state) {
+          final email = state.extra is String ? state.extra as String : null;
+          return ForgotPasswordPage(initialEmail: email);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (_, _) => const VerifyEmailPage(),
+      ),
+      GoRoute(
         path: AppRoutes.signup,
         builder: (_, _) {
           final uid = authService.user?.uid;
           if (uid == null) {
-            return const SignInPage();
+            return const AuthTheme(child: SignInPage());
           }
-          return SignUpPage(
-            uid: uid,
-            usersRepository: usersRepository,
+          return AuthTheme(
+            child: SignUpPage(
+              uid: uid,
+              usersRepository: usersRepository,
+            ),
           );
         },
       ),

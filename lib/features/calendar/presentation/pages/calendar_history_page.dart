@@ -1,12 +1,14 @@
 import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/navigation/app_routes.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
 import 'package:atlas_mobile_pi1/features/workouts/data/templates_repository.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/template_schedule.dart';
 import 'package:atlas_mobile_pi1/services/auth_service.dart';
 import 'package:atlas_mobile_pi1/services/workout_service.dart';
+import 'package:atlas_mobile_pi1/ui/components/app_card.dart';
 import 'package:atlas_mobile_pi1/ui/widgets/shell_page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -612,6 +614,30 @@ class _DayWorkoutsPanel extends StatelessWidget {
   }
 }
 
+class _DayTileIconBadge extends StatelessWidget {
+  const _DayTileIconBadge({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        size: 24,
+        color: AppColors.accentOf(context),
+      ),
+    );
+  }
+}
+
 class _DayScheduledTemplateTile extends StatelessWidget {
   const _DayScheduledTemplateTile({required this.template});
 
@@ -629,50 +655,49 @@ class _DayScheduledTemplateTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Material(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => _start(context),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              Icon(
-                Icons.event_available_rounded,
-                color: AppColors.accentOf(context),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      template.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        l10n.calendarScheduledRoutine,
-                        l10n.workoutsExerciseCount(template.exercises.length),
-                      ].join(' · '),
-                      style: TextStyle(
-                        color: AppColors.textSecondary(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+    return AppCard(
+      color: AppColors.component(context),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      borderRadius: AppRadii.card,
+      onTap: () => _start(context),
+      child: Row(
+        children: [
+          const _DayTileIconBadge(icon: Icons.event_available_rounded),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  template.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.play_arrow_rounded,
-                color: AppColors.textSecondary(context),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    l10n.calendarScheduledRoutine,
+                    l10n.workoutsExerciseCount(template.exercises.length),
+                  ].join(' · '),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          Icon(
+            Icons.play_arrow_rounded,
+            size: 26,
+            color: AppColors.textSecondary(context),
+          ),
+        ],
       ),
     );
   }
@@ -692,54 +717,55 @@ class _DayWorkoutTile extends StatelessWidget {
         time == null ? '' : DateFormat('HH:mm', locale).format(time);
     final isDone = workout.finishedAt != null;
 
-    return Material(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () =>
-            context.push(AppRoutes.workoutDetails(workout.id), extra: workout),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              Icon(
-                isDone
-                    ? Icons.check_circle_rounded
-                    : Icons.event_available_rounded,
-                color: AppColors.accentOf(context),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      workout.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (timeLabel.isNotEmpty) timeLabel,
-                        isDone ? l10n.calendarDone : l10n.calendarPlanned,
-                        l10n.workoutsExerciseCount(workout.exerciseCount),
-                      ].join(' · '),
-                      style: TextStyle(
-                        color: AppColors.textSecondary(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-              ),
-            ],
+    return AppCard(
+      color: AppColors.component(context),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      borderRadius: AppRadii.card,
+      onTap: () =>
+          context.push(AppRoutes.workoutDetails(workout.id), extra: workout),
+      child: Row(
+        children: [
+          _DayTileIconBadge(
+            icon: isDone
+                ? Icons.check_circle_rounded
+                : Icons.event_available_rounded,
           ),
-        ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  workout.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (timeLabel.isNotEmpty) timeLabel,
+                    isDone ? l10n.calendarDone : l10n.calendarPlanned,
+                    l10n.workoutsExerciseCount(workout.exerciseCount),
+                  ].join(' · '),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 26,
+            color: AppColors.textSecondary(context),
+          ),
+        ],
       ),
     );
   }

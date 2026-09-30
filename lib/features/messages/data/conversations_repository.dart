@@ -1,11 +1,14 @@
 import 'dart:async';
 
-import 'package:atlas_mobile_pi1/core/firestore/firestore_paths.dart';
+import 'package:atlas_mobile_pi1/core/dataconnect/dc_helpers.dart';
+import 'package:atlas_mobile_pi1/dataconnect_generated/atlas.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/activity_level.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/gender.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/entities/chat_message.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/entities/conversation.dart';
 import 'package:atlas_mobile_pi1/features/messages/domain/enums/conversation_type.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class ConversationsRepository {
@@ -60,81 +63,168 @@ abstract class ConversationsRepository {
 }
 
 class ConversationsRepositoryImpl implements ConversationsRepository {
-  ConversationsRepositoryImpl({FirebaseFirestore? firestore})
-    : _db = firestore ?? FirebaseFirestore.instance;
+  ConversationsRepositoryImpl({AtlasConnector? connector})
+      : _dc = connector ?? AtlasConnector.instance;
 
-  final FirebaseFirestore _db;
+  final AtlasConnector _dc;
   static const _uuid = Uuid();
   static const generalId = 'general';
   static const generalTtl = Duration(hours: 48);
 
-  CollectionReference<Map<String, dynamic>> get _conversations =>
-      _db.collection(FirestorePaths.conversations);
+  Conversation? _cachedGeneral;
 
-  CollectionReference<Map<String, dynamic>> get _users =>
-      _db.collection(FirestorePaths.users);
+  ConversationParticipant _participant(AppUser user) => ConversationParticipant(
+        userId: user.id,
+        name: user.name ?? user.email,
+        username: user.username ?? '',
+      );
 
-  CollectionReference<Map<String, dynamic>> _messages(String conversationId) =>
-      _conversations.doc(conversationId).collection('messages');
+  Conversation _mapConversation({
+    required String id,
+    required String type,
+    required String title,
+    required String lastMessage,
+    required String lastSenderName,
+    required dynamic updatedAt,
+    String? createdBy,
+    String? inviteToken,
+    required List<ConversationParticipant> participants,
+    required String viewerId,
+  }) {
+    ConversationParticipant? peer;
+    for (final p in participants) {
+      if (p.userId != viewerId) {
+        peer = p;
+        break;
+      }
+    }
+
+    return Conversation(
+      id: id,
+      type: ConversationTypeStorage.fromStorage(type),
+      title: title,
+      participantIds: participants.map((p) => p.userId).toList(),
+      participants: participants,
+      lastMessage: lastMessage,
+      lastSenderName: lastSenderName,
+      updatedAt: fromDcTimestamp(updatedAt) ?? DateTime.now(),
+      createdBy: createdBy,
+      inviteToken: inviteToken,
+      peerPhotoUrl: peer?.photoUrl ?? '',
+    );
+  }
+
+  ConversationParticipant _participantFromUser({
+    required String id,
+    String? name,
+    String? username,
+  }) {
+    return ConversationParticipant(
+      userId: id,
+      name: (name != null && name.trim().isNotEmpty) ? name : id,
+      username: username ?? '',
+      photoUrl: '',
+    );
+  }
+
+  List<ConversationParticipant> _membersFromGet(
+    List<GetConversationConversationConversationMembersOnConversation> members,
+  ) {
+    return members
+        .map(
+          (m) => _participantFromUser(
+            id: m.user.id,
+            name: m.user.name,
+            username: m.user.username,
+          ),
+        )
+        .toList();
+  }
+
+  List<ConversationParticipant> _membersFromInbox(
+    List<ListInboxConversationMembersConversationConversationMembersOnConversation>
+        members,
+  ) {
+    return members
+        .map(
+          (m) => _participantFromUser(
+            id: m.user.id,
+            name: m.user.name,
+            username: m.user.username,
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> _addMember(String conversationId, AppUser user) async {
+    await _dc
+        .addConversationMember(
+          conversationId: conversationId,
+          userId: user.id,
+        )
+        .execute();
+  }
 
   @override
   Future<void> ensureGeneralConversation() async {
-    final doc = _conversations.doc(generalId);
-    var exists = false;
-    try {
-      exists = (await doc.get()).exists;
-    } on FirebaseException catch (e) {
-      // Missing doc + rules that require resource.data → permission-denied.
-      if (e.code != 'permission-denied') rethrow;
-    }
-    if (exists) return;
+    final existing = await getConversation(generalId);
+    if (existing != null) return;
 
-    await doc.set({
-      'type': ConversationType.general.storageName,
-      'title': 'Geral',
-      'participantIds': <String>[],
-      'participants': <Map<String, dynamic>>[],
-      'lastMessage': '',
-      'lastSenderName': '',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdBy': null,
-    });
+    await _dc
+        .upsertConversation(
+          id: generalId,
+          type: ConversationType.general.storageName,
+          title: 'Geral',
+        )
+        .titleLower('geral')
+        .lastMessage('')
+        .lastSenderName('')
+        .execute();
   }
-
-  Conversation? _cachedGeneral;
 
   @override
   Stream<List<Conversation>> watchInbox(String userId) {
-    return _conversations
-        .where('participantIds', arrayContains: userId)
-        .orderBy('updatedAt', descending: true)
-        .snapshots()
-        .asyncMap((snapshot) async {
-          final list = snapshot.docs
-              .map((doc) => Conversation.fromMap(doc.id, doc.data(), userId))
-              .where((c) => c.type != ConversationType.general)
-              .toList();
-
-          final general = await _loadGeneralConversation(userId);
-          return [general, ...list];
-        });
+    return subscribeMapped(
+      () => _dc.listInbox(userId: userId).ref(),
+      (ListInboxData data) {
+        final list = data.conversationMembers
+            .map((row) {
+              final c = row.conversation;
+              return _mapConversation(
+                id: c.id,
+                type: c.type,
+                title: c.title,
+                lastMessage: c.lastMessage,
+                lastSenderName: c.lastSenderName,
+                updatedAt: c.updatedAt,
+                createdBy: c.createdBy,
+                inviteToken: c.inviteToken,
+                participants: _membersFromInbox(
+                  c.conversationMembers_on_conversation,
+                ),
+                viewerId: userId,
+              );
+            })
+            .where((c) => c.type != ConversationType.general)
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        return list;
+      },
+    ).asyncMap((list) async {
+      final general = await _loadGeneralConversation(userId);
+      return [general, ...list];
+    });
   }
 
   Future<Conversation> _loadGeneralConversation(String userId) async {
     if (_cachedGeneral != null) return _cachedGeneral!;
     try {
-      final generalSnap = await _conversations.doc(generalId).get();
-      if (generalSnap.exists && generalSnap.data() != null) {
-        _cachedGeneral = Conversation.fromMap(
-          generalId,
-          generalSnap.data()!,
-          userId,
-        );
-        return _cachedGeneral!;
+      final snap = await getConversation(generalId);
+      if (snap != null) {
+        _cachedGeneral = snap;
+        return snap;
       }
-    } on FirebaseException catch (e) {
-      if (e.code != 'permission-denied') rethrow;
-    }
+    } catch (_) {}
     _cachedGeneral = Conversation.generalPlaceholder();
     return _cachedGeneral!;
   }
@@ -144,24 +234,35 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     String conversationId, {
     int limit = 100,
   }) {
-    return _messages(conversationId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) {
-          final now = DateTime.now();
-          final messages = snapshot.docs
-              .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
-              .where((m) {
-                if (m.expiresAt != null) return m.expiresAt!.isAfter(now);
-                if (conversationId == generalId) {
-                  return now.difference(m.createdAt) < generalTtl;
-                }
-                return true;
-              })
-              .toList();
-          return messages.reversed.toList();
-        });
+    return subscribeMapped(
+      () => _dc
+          .listMessages(conversationId: conversationId)
+          .limit(limit)
+          .ref(),
+      (ListMessagesData data) {
+        final now = DateTime.now();
+        final messages = data.messages
+            .map(
+              (m) => ChatMessage(
+                id: m.id,
+                text: m.text,
+                senderId: m.senderId,
+                senderName: m.senderName,
+                createdAt: fromDcTimestamp(m.createdAt) ?? now,
+                expiresAt: fromDcTimestamp(m.expiresAt),
+              ),
+            )
+            .where((m) {
+              if (m.expiresAt != null) return m.expiresAt!.isAfter(now);
+              if (conversationId == generalId) {
+                return now.difference(m.createdAt) < generalTtl;
+              }
+              return true;
+            })
+            .toList();
+        return messages.reversed.toList();
+      },
+    );
   }
 
   @override
@@ -176,34 +277,67 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
 
     final now = DateTime.now();
     final isGeneral = conversationId == generalId;
-    final data = <String, dynamic>{
-      'text': trimmed,
-      'senderId': senderId,
-      'senderName': senderName,
-      'createdAt': Timestamp.fromDate(now),
-    };
+    final builder = _dc.sendMessage(
+      conversationId: conversationId,
+      text: trimmed,
+      senderId: senderId,
+      senderName: senderName,
+      createdAt: toDcTimestamp(now),
+    );
     if (isGeneral) {
-      data['expiresAt'] = Timestamp.fromDate(now.add(generalTtl));
+      builder.expiresAt(toDcTimestamp(now.add(generalTtl)));
     }
+    await builder.execute();
 
-    await _messages(conversationId).add(data);
-    await _conversations.doc(conversationId).set({
-      'lastMessage': trimmed,
-      'lastSenderName': senderName,
-      'updatedAt': Timestamp.fromDate(now),
-    }, SetOptions(merge: true));
+    await _dc
+        .updateConversationLastMessage(
+          id: conversationId,
+          lastMessage: trimmed,
+          lastSenderName: senderName,
+          updatedAt: toDcTimestamp(now),
+        )
+        .execute();
 
     if (isGeneral) {
       unawaited(purgeExpiredGeneralMessages());
     }
   }
 
-  Map<String, dynamic> _participantMap(AppUser user) => {
-    'userId': user.id,
-    'name': user.name ?? user.email,
-    'username': user.username ?? '',
-    'photoUrl': '',
-  };
+  Future<Conversation> _upsertPairChat({
+    required String id,
+    required ConversationType type,
+    required AppUser a,
+    required AppUser b,
+    required AppUser viewer,
+  }) async {
+    final existing = await getConversation(id);
+    if (existing != null) return existing;
+
+    await _dc
+        .upsertConversation(
+          id: id,
+          type: type.storageName,
+          title: '',
+        )
+        .lastMessage('')
+        .lastSenderName('')
+        .createdBy(viewer.id)
+        .execute();
+
+    await _addMember(id, a);
+    await _addMember(id, b);
+
+    return Conversation(
+      id: id,
+      type: type,
+      title: '',
+      participantIds: [a.id, b.id],
+      participants: [_participant(a), _participant(b)],
+      lastMessage: '',
+      updatedAt: DateTime.now(),
+      createdBy: viewer.id,
+    );
+  }
 
   @override
   Future<Conversation> getOrCreateDm({
@@ -211,24 +345,13 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     required AppUser other,
   }) async {
     final ids = [me.id, other.id]..sort();
-    final id = 'dm_${ids[0]}_${ids[1]}';
-    final doc = _conversations.doc(id);
-    final existing = await _tryGetConversation(doc, viewerId: me.id);
-    if (existing != null) return existing;
-
-    await doc.set({
-      'type': ConversationType.dm.storageName,
-      'title': '',
-      'participantIds': [me.id, other.id],
-      'participants': [_participantMap(me), _participantMap(other)],
-      'lastMessage': '',
-      'lastSenderName': '',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdBy': me.id,
-    }, SetOptions(merge: true));
-
-    final fresh = await doc.get();
-    return Conversation.fromMap(id, fresh.data()!, me.id);
+    return _upsertPairChat(
+      id: 'dm_${ids[0]}_${ids[1]}',
+      type: ConversationType.dm,
+      a: me,
+      b: other,
+      viewer: me,
+    );
   }
 
   @override
@@ -237,39 +360,13 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     required AppUser student,
   }) async {
     final ids = [coach.id, student.id]..sort();
-    final id = 'coach_${ids[0]}_${ids[1]}';
-    final doc = _conversations.doc(id);
-    final existing = await _tryGetConversation(doc, viewerId: coach.id);
-    if (existing != null) return existing;
-
-    await doc.set({
-      'type': ConversationType.coach.storageName,
-      'title': '',
-      'participantIds': [coach.id, student.id],
-      'participants': [_participantMap(coach), _participantMap(student)],
-      'lastMessage': '',
-      'lastSenderName': '',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdBy': coach.id,
-    }, SetOptions(merge: true));
-
-    final fresh = await doc.get();
-    return Conversation.fromMap(id, fresh.data()!, coach.id);
-  }
-
-  /// Missing conversation docs can fail rules that touch [resource.data].
-  Future<Conversation?> _tryGetConversation(
-    DocumentReference<Map<String, dynamic>> doc, {
-    required String viewerId,
-  }) async {
-    try {
-      final snap = await doc.get();
-      if (!snap.exists || snap.data() == null) return null;
-      return Conversation.fromMap(doc.id, snap.data()!, viewerId);
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') return null;
-      rethrow;
-    }
+    return _upsertPairChat(
+      id: 'coach_${ids[0]}_${ids[1]}',
+      type: ConversationType.coach,
+      a: coach,
+      b: student,
+      viewer: coach,
+    );
   }
 
   @override
@@ -280,20 +377,31 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     final id = _uuid.v4();
     final token = _uuid.v4();
     final title = name.trim();
-    await _conversations.doc(id).set({
-      'type': ConversationType.community.storageName,
-      'title': title,
-      'titleLower': title.toLowerCase(),
-      'participantIds': [creator.id],
-      'participants': [_participantMap(creator)],
-      'lastMessage': '',
-      'lastSenderName': '',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdBy': creator.id,
-      'inviteToken': token,
-    });
-    final fresh = await _conversations.doc(id).get();
-    return Conversation.fromMap(id, fresh.data()!, creator.id);
+    await _dc
+        .upsertConversation(
+          id: id,
+          type: ConversationType.community.storageName,
+          title: title,
+        )
+        .titleLower(title.toLowerCase())
+        .lastMessage('')
+        .lastSenderName('')
+        .createdBy(creator.id)
+        .inviteToken(token)
+        .execute();
+    await _addMember(id, creator);
+
+    return Conversation(
+      id: id,
+      type: ConversationType.community,
+      title: title,
+      participantIds: [creator.id],
+      participants: [_participant(creator)],
+      lastMessage: '',
+      updatedAt: DateTime.now(),
+      createdBy: creator.id,
+      inviteToken: token,
+    );
   }
 
   @override
@@ -301,33 +409,20 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     required String conversationId,
     required AppUser user,
   }) async {
-    final doc = _conversations.doc(conversationId);
-    final snap = await doc.get();
-    if (!snap.exists || snap.data() == null) {
+    final existing = await getConversation(conversationId);
+    if (existing == null) {
       throw StateError('Comunidade não encontrada');
     }
-    final data = snap.data()!;
-    if (ConversationTypeStorage.fromStorage(data['type'] as String?) !=
-        ConversationType.community) {
+    if (existing.type != ConversationType.community) {
       throw StateError('Não é uma comunidade');
     }
 
-    final participantIds = (data['participantIds'] as List<dynamic>? ?? [])
-        .cast<String>();
-    if (!participantIds.contains(user.id)) {
-      final participants = (data['participants'] as List<dynamic>? ?? [])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-      participants.add(_participantMap(user));
-      await doc.update({
-        'participantIds': FieldValue.arrayUnion([user.id]),
-        'participants': participants,
-      });
+    if (!existing.participantIds.contains(user.id)) {
+      await _addMember(conversationId, user);
     }
 
-    final fresh = await doc.get();
-    return Conversation.fromMap(conversationId, fresh.data()!, user.id);
+    final fresh = await getConversation(conversationId);
+    return fresh ?? existing;
   }
 
   @override
@@ -335,19 +430,30 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     required String token,
     required AppUser user,
   }) async {
-    final query = await _conversations
-        .where('inviteToken', isEqualTo: token)
-        .limit(1)
-        .get();
-    if (query.docs.isEmpty) return null;
-    return joinCommunity(conversationId: query.docs.first.id, user: user);
+    final result =
+        await _dc.getConversationByInviteToken(token: token).execute();
+    final list = result.data.conversations;
+    if (list.isEmpty) return null;
+    return joinCommunity(conversationId: list.first.id, user: user);
   }
 
   @override
   Future<Conversation?> getConversation(String id) async {
-    final snap = await _conversations.doc(id).get();
-    if (!snap.exists || snap.data() == null) return null;
-    return Conversation.fromMap(id, snap.data()!, '');
+    final result = await _dc.getConversation(id: id).execute();
+    final c = result.data.conversation;
+    if (c == null) return null;
+    return _mapConversation(
+      id: c.id,
+      type: c.type,
+      title: c.title,
+      lastMessage: c.lastMessage,
+      lastSenderName: c.lastSenderName,
+      updatedAt: c.updatedAt,
+      createdBy: c.createdBy,
+      inviteToken: c.inviteToken,
+      participants: _membersFromGet(c.conversationMembers_on_conversation),
+      viewerId: '',
+    );
   }
 
   @override
@@ -360,26 +466,43 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     if (q.isEmpty) return [];
 
     final end = '$q\uf8ff';
-    final byUsername = await _users
-        .where('usernameLower', isGreaterThanOrEqualTo: q)
-        .where('usernameLower', isLessThanOrEqualTo: end)
-        .limit(20)
-        .get();
-
-    final byName = await _users
-        .where('nameLower', isGreaterThanOrEqualTo: q)
-        .where('nameLower', isLessThanOrEqualTo: end)
-        .limit(20)
-        .get();
+    final byUsername =
+        await _dc.searchUsersByUsername(q: q, end: end).execute();
+    final byName = await _dc.searchUsersByName(q: q, end: end).execute();
 
     final seen = <String>{};
     final results = <AppUser>[];
-    for (final doc in [...byUsername.docs, ...byName.docs]) {
-      if (!seen.add(doc.id)) continue;
-      final user = AppUser.fromMap(doc.id, doc.data());
-      if (excludeUid != null && user.id == excludeUid) continue;
-      results.add(user);
+
+    void addAll(Iterable<dynamic> users) {
+      for (final u in users) {
+        final id = u.id as String;
+        if (!seen.add(id)) continue;
+        if (excludeUid != null && id == excludeUid) continue;
+        results.add(
+          AppUser(
+            id: id,
+            email: u.email as String,
+            name: u.name as String?,
+            username: u.username as String?,
+            gender: Gender.fromStorage(u.gender as String?),
+            height: u.height as double?,
+            weight: u.weight as double?,
+            birthDate: fromDcTimestamp(u.birthDate),
+            activityLevel:
+                ActivityLevel.fromStorage(u.activityLevel as String?),
+            role: UserRoleStorage.fromStorage(u.role as String?),
+            profileCompleted: u.profileCompleted as bool,
+            bannerPreset: u.bannerPreset as String?,
+            bannerUrl: u.bannerUrl as String?,
+            photoUrl: u.photoUrl as String?,
+            createdAt: fromDcTimestamp(u.createdAt),
+          ),
+        );
+      }
     }
+
+    addAll(byUsername.data.users);
+    addAll(byName.data.users);
     return results;
   }
 
@@ -388,26 +511,42 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return [];
     final end = '$q\uf8ff';
-    final snap = await _conversations
-        .where('type', isEqualTo: ConversationType.community.storageName)
-        .where('titleLower', isGreaterThanOrEqualTo: q)
-        .where('titleLower', isLessThanOrEqualTo: end)
-        .limit(20)
-        .get();
-
-    return snap.docs
-        .map((doc) => Conversation.fromMap(doc.id, doc.data(), ''))
+    final result = await _dc.searchCommunities(q: q, end: end).execute();
+    return result.data.conversations
+        .map(
+          (c) => _mapConversation(
+            id: c.id,
+            type: c.type,
+            title: c.title,
+            lastMessage: c.lastMessage,
+            lastSenderName: c.lastSenderName,
+            updatedAt: c.updatedAt,
+            createdBy: c.createdBy,
+            inviteToken: c.inviteToken,
+            participants: c.conversationMembers_on_conversation
+                .map(
+                  (m) => _participantFromUser(
+                    id: m.user.id,
+                    name: m.user.name,
+                    username: m.user.username,
+                  ),
+                )
+                .toList(),
+            viewerId: '',
+          ),
+        )
         .toList();
   }
 
   @override
   Future<void> purgeExpiredGeneralMessages() async {
-    final cutoff = Timestamp.fromDate(DateTime.now().subtract(generalTtl));
-    final old = await _messages(
-      generalId,
-    ).where('createdAt', isLessThan: cutoff).limit(50).get();
-    for (final doc in old.docs) {
-      await doc.reference.delete();
+    final cutoff = toDcTimestamp(DateTime.now().subtract(generalTtl));
+    final old = await _dc
+        .listExpiredGeneralMessages(cutoff: cutoff)
+        .limit(50)
+        .execute();
+    for (final msg in old.data.messages) {
+      await _dc.deleteMessage(id: msg.id).execute();
     }
   }
 }

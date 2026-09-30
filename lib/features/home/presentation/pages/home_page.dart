@@ -1,5 +1,7 @@
 import 'package:atlas_mobile_pi1/core/l10n/l10n_ext.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_spacing.dart';
+import 'package:atlas_mobile_pi1/core/theme/app_typography.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/username.dart';
 import 'package:atlas_mobile_pi1/features/home/domain/entities/home_widget.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:atlas_mobile_pi1/features/home/presentation/widgets/catalog/add_widget_sheet.dart';
@@ -54,9 +56,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final handle = context.select<AuthService, String>(
-      (a) => a.appUser?.handle ?? '@…',
-    );
+    final username = context.select<AuthService, String>((a) {
+      final u = Username.normalize(a.appUser?.username);
+      return u.isEmpty ? '…' : u;
+    });
 
     return ChangeNotifierProvider(
       create: (_) => HomeDashboardController(userId: userId).load(),
@@ -67,7 +70,11 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ShellPageHeader(
-                title: handle,
+                title: username,
+                titleStyle: AppTypography.shellTitle(context).copyWith(
+                  fontSize: 26,
+                  letterSpacing: -0.5,
+                ),
                 onTitleTap: () => _onTitleTap(context),
                 actions: [
                   AppIconButton(

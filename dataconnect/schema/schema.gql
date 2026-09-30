@@ -1,0 +1,107 @@
+# Atlas relational schema for Firebase SQL Connect (PostgreSQL).
+# User.id = Firebase Auth UID (String).
+
+type User @table(key: "id") {
+  id: String!
+  email: String!
+  name: String
+  nameLower: String
+  username: String @unique
+  gender: String
+  height: Float
+  weight: Float
+  birthDate: Timestamp
+  activityLevel: String
+  role: String! @default(value: "student")
+  profileCompleted: Boolean! @default(value: false)
+  bannerPreset: String
+  bannerUrl: String
+  photoUrl: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Workout @table {
+  id: UUID! @default(expr: "uuidV4()")
+  user: User!
+  name: String!
+  startedAt: Timestamp
+  finishedAt: Timestamp
+  # Nested exercises/sets as JSON (relational top-level; tree stays JSON for write simplicity).
+  exercisesJson: Any
+  volume: Int! @default(value: 0)
+  isPublic: Boolean! @default(value: true)
+  assignedByCoachId: String
+  source: Int! @default(value: 0)
+  templateId: String
+}
+
+type Template @table {
+  id: UUID! @default(expr: "uuidV4()")
+  user: User!
+  name: String!
+  exercisesJson: Any
+  notes: String! @default(value: "")
+  defaultRestSeconds: Int! @default(value: 90)
+  scheduleMode: String! @default(value: "none")
+  weekdaysJson: Any
+  restDaysBetween: Int
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type Post @table {
+  id: UUID! @default(expr: "uuidV4()")
+  user: User!
+  caption: String! @default(value: "")
+  imageUrl: String! @default(value: "")
+  likes: Int! @default(value: 0)
+  comments: Int! @default(value: 0)
+  volume: Int! @default(value: 0)
+  isPublic: Boolean! @default(value: true)
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Conversation @table(key: "id") {
+  id: String!
+  type: String!
+  title: String! @default(value: "")
+  titleLower: String
+  lastMessage: String! @default(value: "")
+  lastSenderName: String! @default(value: "")
+  updatedAt: Timestamp! @default(expr: "request.time")
+  createdBy: String
+  inviteToken: String
+}
+
+type ConversationMember @table(key: ["conversation", "user"]) {
+  conversation: Conversation!
+  user: User!
+}
+
+type Message @table {
+  id: UUID! @default(expr: "uuidV4()")
+  conversation: Conversation!
+  text: String!
+  senderId: String!
+  senderName: String!
+  createdAt: Timestamp! @default(expr: "request.time")
+  expiresAt: Timestamp
+}
+
+type CoachLink @table {
+  id: UUID! @default(expr: "uuidV4()")
+  coachId: String!
+  studentId: String!
+  status: String! @default(value: "active")
+  linkedAt: Timestamp! @default(expr: "request.time")
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type LinkInvitation @table(key: "token") {
+  token: String!
+  creatorId: String!
+  creatorRole: String!
+  status: String! @default(value: "pending")
+  expiresAt: Timestamp!
+  createdAt: Timestamp! @default(expr: "request.time")
+}

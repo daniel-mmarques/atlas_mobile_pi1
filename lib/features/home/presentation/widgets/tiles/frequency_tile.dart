@@ -47,6 +47,8 @@ class FrequencyTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return StreamBuilder<List<Workout>>(
       stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
@@ -62,36 +64,28 @@ class FrequencyTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  hasData ? 'Training frequency' : context.l10n.widgetNotLogged,
-                  style: TextStyle(
-                    color: AppColors.textSecondary(context),
-                    fontSize: 12,
-                  ),
+                HomeWidgetChrome(
+                  title: name,
+                  subtitle: hasData
+                      ? l10n.widgetFrequencySubtitle
+                      : l10n.widgetNotLogged,
                 ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: Column(
                     children: [
                       _FreqRow(
-                        label: 'Esta semana',
+                        label: l10n.calendarThisWeek,
                         value: '$week',
                       ),
                       const SizedBox(height: 6),
                       _FreqRow(
-                        label: 'Este mês',
+                        label: l10n.widgetThisMonth,
                         value: '$month',
                       ),
                       const SizedBox(height: 6),
                       _FreqRow(
-                        label: 'Média/sem',
+                        label: l10n.widgetAvgPerWeek,
                         value: avg.toStringAsFixed(1),
                       ),
                     ],
@@ -105,7 +99,8 @@ class FrequencyTile extends StatelessWidget {
         return HomeTileNumber(
           value: '$week',
           title: name,
-          subtitle: hasData ? 'This week' : context.l10n.widgetNotLogged,
+          subtitle: hasData ? l10n.calendarThisWeek : l10n.widgetNotLogged,
+          footer: hasData ? l10n.widgetMonthCount(month) : null,
         );
       },
     );
@@ -123,6 +118,9 @@ class _FreqRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = AppColors.textPrimary(context);
+    final secondary = AppColors.textSecondary(context);
+
     return Expanded(
       child: Row(
         children: [
@@ -132,14 +130,18 @@ class _FreqRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: AppColors.textSecondary(context),
+                color: secondary,
                 fontSize: 12,
               ),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            style: TextStyle(
+              color: primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
         ],
       ),

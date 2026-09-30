@@ -58,7 +58,55 @@ class HomeWidgetTile extends StatelessWidget {
   }
 }
 
-/// Design from mock: big value, title name, muted status line.
+/// Título + subtítulo padrão dos widgets da Home.
+class HomeWidgetChrome extends StatelessWidget {
+  const HomeWidgetChrome({
+    super.key,
+    required this.title,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = AppColors.textPrimary(context);
+    final secondary = AppColors.textSecondary(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: primary,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            letterSpacing: -0.2,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            subtitle!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: secondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Design: valor grande, título, linha de status.
 class HomeTileNumber extends StatelessWidget {
   const HomeTileNumber({
     super.key,
@@ -66,6 +114,7 @@ class HomeTileNumber extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.unit,
+    this.footer,
   });
 
   final String value;
@@ -73,8 +122,14 @@ class HomeTileNumber extends StatelessWidget {
   final String? subtitle;
   final String? unit;
 
+  /// Linha extra abaixo do subtítulo (ex.: melhor streak).
+  final String? footer;
+
   @override
   Widget build(BuildContext context) {
+    final primary = AppColors.textPrimary(context);
+    final secondary = AppColors.textSecondary(context);
+
     return Padding(
       padding: const EdgeInsets.only(right: 28, top: 4),
       child: Column(
@@ -90,6 +145,7 @@ class HomeTileNumber extends StatelessWidget {
                 Text(
                   value,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: primary,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.8,
                         height: 1,
@@ -102,7 +158,7 @@ class HomeTileNumber extends StatelessWidget {
                     child: Text(
                       unit!,
                       style: TextStyle(
-                        color: AppColors.textSecondary(context),
+                        color: secondary,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -117,9 +173,11 @@ class HomeTileNumber extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
+              color: primary,
               fontWeight: FontWeight.w700,
               fontSize: 16,
+              letterSpacing: -0.2,
             ),
           ),
           if (subtitle != null) ...[
@@ -129,8 +187,21 @@ class HomeTileNumber extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: AppColors.textSecondary(context),
+                color: secondary,
                 fontSize: 13,
+              ),
+            ),
+          ],
+          if (footer != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              footer!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: secondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

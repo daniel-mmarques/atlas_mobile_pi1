@@ -1,4 +1,5 @@
 import 'package:atlas_mobile_pi1/features/workouts/data/templates_repository.dart';
+import 'package:atlas_mobile_pi1/features/workouts/domain/entities/catalog_exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/exercise.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout_set.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/enums/set_type.dart';
@@ -251,7 +252,7 @@ class CreateRoutineController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addExercises(List<({String id, String name})> items) {
+  void addExercises(List<CatalogExercise> items) {
     final next = [...exercises];
     for (final item in items) {
       if (next.any((e) => e.id == item.id)) continue;
@@ -259,6 +260,11 @@ class CreateRoutineController extends ChangeNotifier {
         Exercise(
           id: item.id,
           name: item.name,
+          imageUrl: item.imageUrl,
+          videoUrl: item.videoUrl,
+          bodyPart: item.primaryBodyPart,
+          target: item.primaryTarget,
+          equipment: item.primaryEquipment,
           rest: defaultRest,
           note: '',
           sets: [
@@ -279,6 +285,27 @@ class CreateRoutineController extends ChangeNotifier {
         editingExerciseIndex = null;
       } else if (editingExerciseIndex! > index) {
         editingExerciseIndex = editingExerciseIndex! - 1;
+      }
+    }
+    notifyListeners();
+  }
+
+  void reorderExercises(int oldIndex, int newIndex) {
+    var to = newIndex;
+    if (to > oldIndex) to -= 1;
+    if (oldIndex == to) return;
+    final next = [...exercises];
+    final item = next.removeAt(oldIndex);
+    next.insert(to, item);
+    exercises = next;
+    if (editingExerciseIndex != null) {
+      final editing = editingExerciseIndex!;
+      if (editing == oldIndex) {
+        editingExerciseIndex = to;
+      } else if (oldIndex < editing && editing <= to) {
+        editingExerciseIndex = editing - 1;
+      } else if (to <= editing && editing < oldIndex) {
+        editingExerciseIndex = editing + 1;
       }
     }
     notifyListeners();

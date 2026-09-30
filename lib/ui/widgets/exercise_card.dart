@@ -98,9 +98,29 @@ class _ExerciseHeader extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
-            exercise.name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                exercise.name,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+              if (exercise.target.isNotEmpty || exercise.bodyPart.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (exercise.target.isNotEmpty) exercise.target,
+                    if (exercise.bodyPart.isNotEmpty) exercise.bodyPart,
+                  ].join(' · '),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
         ),
         const Icon(Icons.more_vert),

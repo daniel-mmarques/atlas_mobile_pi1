@@ -33,4 +33,23 @@ abstract class UserRepository {
   });
 
   Future<void> updateRole(String uid, UserRole role);
+
+  Future<void> updateBanner({
+    required String uid,
+    String? bannerPreset,
+    String? bannerUrl,
+    bool clearBannerUrl = false,
+  });
+
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String username,
+    required DateTime birthDate,
+    required Gender gender,
+    required double height,
+    required double weight,
+    required ActivityLevel activityLevel,
+    String? photoUrl,
+  });
 }

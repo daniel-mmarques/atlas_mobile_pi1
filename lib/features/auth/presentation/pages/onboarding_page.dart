@@ -5,6 +5,7 @@ import 'package:atlas_mobile_pi1/core/theme/app_colors.dart';
 import 'package:atlas_mobile_pi1/core/theme/app_radii.dart';
 import 'package:atlas_mobile_pi1/core/theme/responsive.dart';
 import 'package:atlas_mobile_pi1/features/auth/presentation/pages/sign_in_page.dart';
+import 'package:atlas_mobile_pi1/features/auth/presentation/widgets/auth_theme.dart';
 import 'package:atlas_mobile_pi1/ui/components/slide_to_start_action.dart';
 import 'package:flutter/material.dart';
 
@@ -47,6 +48,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    return AuthTheme(
+      child: Builder(builder: (context) => _buildBody(context)),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     if (getStartedFinished) {
       return const SignInPage();
     }

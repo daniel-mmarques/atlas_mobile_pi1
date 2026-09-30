@@ -85,75 +85,94 @@ class AppPalette extends ThemeExtension<AppPalette> {
   }
 }
 
-/// Catálogo das 7 paletas.
+/// Catálogo das paletas Atlas (Light → Midnight).
 abstract class AppPalettes {
   static AppPalette of(AppThemeId id) => switch (id) {
         AppThemeId.light => light,
+        AppThemeId.arctic => arctic,
+        AppThemeId.sakura => sakura,
         AppThemeId.sunset => sunset,
-        AppThemeId.cyberpunk => cyberpunk,
-        AppThemeId.storm => storm,
+        AppThemeId.coffee => coffee,
         AppThemeId.ocean => ocean,
+        AppThemeId.storm => storm,
+        AppThemeId.cyberpunk => cyberpunk,
         AppThemeId.dark => dark,
         AppThemeId.midnight => midnight,
       };
 
+  /// Clean neutro — branco + cinza + azul.
   static const light = AppPalette(
     id: AppThemeId.light,
     brightness: Brightness.light,
-    scaffold: Color(0xFFF0F0F2),
+    scaffold: Color(0xFFF0F2F5),
     surface: Color(0xFFFFFFFF),
-    component: Color(0xFFE8EBED),
-    componentHover: Color(0xFFD8DBDE),
-    border: Color(0xFFC8CCD0),
-    accent: Color(0xFF6E947C),
+    component: Color(0xFFD5DAE0),
+    componentHover: Color(0xFFC4CAD2),
+    border: Color(0xFFB0B7C0),
+    accent: Color(0xFF4A7FD4),
     onAccent: Color(0xFFFFFFFF),
     textPrimary: Color(0xFF0A0A0D),
     textSecondary: Color(0xFF525359),
   );
 
-  /// Por do sol — creme / pêssego / coral.
+  /// Gelo — branco + azul-gelo + azul.
+  static const arctic = AppPalette(
+    id: AppThemeId.arctic,
+    brightness: Brightness.light,
+    scaffold: Color(0xFFEEF6FA),
+    surface: Color(0xFFF8FCFE),
+    component: Color(0xFFC8DCE8),
+    componentHover: Color(0xFFB4CEDC),
+    border: Color(0xFF9CB8C8),
+    accent: Color(0xFF3A8BB8),
+    onAccent: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFF163048),
+    textSecondary: Color(0xFF5A7A90),
+  );
+
+  /// Flores de cerejeira — rosa suave / branco / vinho.
+  static const sakura = AppPalette(
+    id: AppThemeId.sakura,
+    brightness: Brightness.light,
+    scaffold: Color(0xFFFFF0F5),
+    surface: Color(0xFFFFF9FB),
+    component: Color(0xFFF3D0DC),
+    componentHover: Color(0xFFE8BCCB),
+    border: Color(0xFFDCA8BA),
+    accent: Color(0xFFD4789C),
+    onAccent: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFF4A2C3A),
+    textSecondary: Color(0xFF9A6B7C),
+  );
+
+  /// Pôr do sol — creme / coral / laranja / roxo.
   static const sunset = AppPalette(
     id: AppThemeId.sunset,
     brightness: Brightness.light,
     scaffold: Color(0xFFFFF5EE),
     surface: Color(0xFFFFFBF7),
-    component: Color(0xFFFFE8DC),
-    componentHover: Color(0xFFFFD9C7),
-    border: Color(0xFFE8C4B0),
+    component: Color(0xFFFFE0D0),
+    componentHover: Color(0xFFFFD0B8),
+    border: Color(0xFFE8B8A8),
     accent: Color(0xFFE07A5F),
     onAccent: Color(0xFFFFFFFF),
-    textPrimary: Color(0xFF3D2C29),
-    textSecondary: Color(0xFF8B6B63),
+    textPrimary: Color(0xFF3D2C40),
+    textSecondary: Color(0xFF8B6B7A),
   );
 
-  /// Retro-futurista — neon amarelo + roxo.
-  static const cyberpunk = AppPalette(
-    id: AppThemeId.cyberpunk,
-    brightness: Brightness.dark,
-    scaffold: Color(0xFF0D0A12),
-    surface: Color(0xFF1A1225),
-    component: Color(0xFF2A1F3D),
-    componentHover: Color(0xFF3D2E55),
-    border: Color(0xFF5B3F7A),
-    accent: Color(0xFFFCEE0A),
-    onAccent: Color(0xFF0D0A12),
-    textPrimary: Color(0xFFF2E9FF),
-    textSecondary: Color(0xFFB39DDB),
-  );
-
-  /// Nubank dark — roxos profundos.
-  static const storm = AppPalette(
-    id: AppThemeId.storm,
-    brightness: Brightness.dark,
-    scaffold: Color(0xFF12081A),
-    surface: Color(0xFF1E0F2E),
-    component: Color(0xFF2D1845),
-    componentHover: Color(0xFF3F2260),
-    border: Color(0xFF5A3480),
-    accent: Color(0xFF9B6DFF),
-    onAccent: Color(0xFFFFFFFF),
-    textPrimary: Color(0xFFF0E6FF),
-    textSecondary: Color(0xFFB8A0D4),
+  /// Café — bege + creme + marrom.
+  static const coffee = AppPalette(
+    id: AppThemeId.coffee,
+    brightness: Brightness.light,
+    scaffold: Color(0xFFF5EDE4),
+    surface: Color(0xFFFFF9F3),
+    component: Color(0xFFE4D2C0),
+    componentHover: Color(0xFFD6C0AA),
+    border: Color(0xFFC4A890),
+    accent: Color(0xFF8B5E3C),
+    onAccent: Color(0xFFFFF8F0),
+    textPrimary: Color(0xFF2C1A10),
+    textSecondary: Color(0xFF7A5C48),
   );
 
   /// Fundo do mar — navy / teal.
@@ -171,7 +190,37 @@ abstract class AppPalettes {
     textSecondary: Color(0xFF8BB8C4),
   );
 
-  /// AMOLED padrão Atlas.
+  /// Tempestade — roxo azulado + azul elétrico.
+  static const storm = AppPalette(
+    id: AppThemeId.storm,
+    brightness: Brightness.dark,
+    scaffold: Color(0xFF0A0E1A),
+    surface: Color(0xFF141A2C),
+    component: Color(0xFF1E2840),
+    componentHover: Color(0xFF2A3858),
+    border: Color(0xFF3A4A70),
+    accent: Color(0xFF4B8CFF),
+    onAccent: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFFE4E8F4),
+    textSecondary: Color(0xFF8A9AB8),
+  );
+
+  /// Retro-futurista — preto + amarelo neon + magenta/ciano.
+  static const cyberpunk = AppPalette(
+    id: AppThemeId.cyberpunk,
+    brightness: Brightness.dark,
+    scaffold: Color(0xFF0A0810),
+    surface: Color(0xFF161022),
+    component: Color(0xFF261A38),
+    componentHover: Color(0xFF3A2850),
+    border: Color(0xFF7A3A8A),
+    accent: Color(0xFFFCEE0A),
+    onAccent: Color(0xFF0A0810),
+    textPrimary: Color(0xFFF2E9FF),
+    textSecondary: Color(0xFF5CE1E6),
+  );
+
+  /// AMOLED neutro — preto / cinza / branco.
   static const dark = AppPalette(
     id: AppThemeId.dark,
     brightness: Brightness.dark,
@@ -180,13 +229,28 @@ abstract class AppPalettes {
     component: Color(0xFF2E2E33),
     componentHover: Color(0xFF46474C),
     border: Color(0xFF525359),
-    accent: Color(0xFF6E947C),
-    onAccent: Color(0xFFFFFFFF),
+    accent: Color(0xFFB0B4BC),
+    onAccent: Color(0xFF0A0A0D),
     textPrimary: Color(0xFFE6E6E6),
     textSecondary: Color(0xFFA8A9B2),
   );
 
-  /// Batman / treino de madrugada — quase preto.
+  /// Funil de auth (login, cadastro, onboarding). Não entra no picker.
+  static const auth = AppPalette(
+    id: AppThemeId.dark,
+    brightness: Brightness.dark,
+    scaffold: Color(0xFF050506),
+    surface: Color(0xFF141416),
+    component: Color(0xFF1C1C20),
+    componentHover: Color(0xFF2A2A30),
+    border: Color(0xFF8E8E96),
+    accent: Color(0xFFC0C0C8),
+    onAccent: Color(0xFF0A0A0D),
+    textPrimary: Color(0xFFF4F4F6),
+    textSecondary: Color(0xFFB0B0B8),
+  );
+
+  /// Batman / treino de madrugada — preto absoluto.
   static const midnight = AppPalette(
     id: AppThemeId.midnight,
     brightness: Brightness.dark,

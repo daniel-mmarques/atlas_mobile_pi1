@@ -1,11 +1,12 @@
-import 'package:atlas_mobile_pi1/core/firestore/firestore_paths.dart';
+import 'package:atlas_mobile_pi1/core/dataconnect/dc_helpers.dart';
+import 'package:atlas_mobile_pi1/dataconnect_generated/atlas.dart';
 import 'package:atlas_mobile_pi1/features/auth/domain/entities/app_user.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/activity_level.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/gender.dart';
+import 'package:atlas_mobile_pi1/features/auth/domain/enums/user_role.dart';
 import 'package:atlas_mobile_pi1/features/coach/domain/entities/link_invitation.dart';
 import 'package:atlas_mobile_pi1/features/coach/domain/enums/coach_enums.dart';
-import 'package:atlas_mobile_pi1/features/workouts/data/workout_mapper.dart';
-import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout.dart';
 import 'package:atlas_mobile_pi1/features/workouts/domain/enums/workout_source.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class CoachRepository {
@@ -33,11 +34,38 @@ abstract class CoachRepository {
 }
 
 class CoachRepositoryImpl implements CoachRepository {
-  CoachRepositoryImpl({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  CoachRepositoryImpl({AtlasConnector? connector})
+      : _dc = connector ?? AtlasConnector.instance;
 
-  final FirebaseFirestore _db;
+  final AtlasConnector _dc;
   static const _uuid = Uuid();
+
+  AppUser _mapUser(GetUsersByIdsUsers u) {
+    return AppUser(
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      username: u.username,
+      gender: Gender.fromStorage(u.gender),
+      height: u.height,
+      weight: u.weight,
+      birthDate: fromDcTimestamp(u.birthDate),
+      activityLevel: ActivityLevel.fromStorage(u.activityLevel),
+      role: UserRoleStorage.fromStorage(u.role),
+      profileCompleted: u.profileCompleted,
+      bannerPreset: u.bannerPreset,
+      bannerUrl: u.bannerUrl,
+      photoUrl: u.photoUrl,
+      createdAt: fromDcTimestamp(u.createdAt),
+    );
+  }
+
+  Future<List<AppUser>> _fetchUsersByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final result =
+        await _dc.getUsersByIds(ids: ids.toSet().toList()).execute();
+    return result.data.users.map(_mapUser).toList();
+  }
 
   @override
   Future<LinkInvitation> generateInvitation({
@@ -47,24 +75,22 @@ class CoachRepositoryImpl implements CoachRepository {
     final token = _uuid.v4();
     final now = DateTime.now();
     final expiresAt = now.add(const Duration(days: 7));
-    final invitation = LinkInvitation(
+    await _dc
+        .createLinkInvitation(
+          token: token,
+          creatorId: creatorId,
+          creatorRole: creatorRole.storageName,
+          expiresAt: toDcTimestamp(expiresAt),
+        )
+        .execute();
+
+    return LinkInvitation(
       token: token,
       creatorId: creatorId,
       creatorRole: creatorRole,
       expiresAt: expiresAt,
       createdAt: now,
     );
-
-    await _db.collection(FirestorePaths.linkInvitations).doc(token).set({
-      'token': token,
-      'creatorId': creatorId,
-      'creatorRole': creatorRole.storageName,
-      'status': InvitationStatus.pending.storageName,
-      'expiresAt': Timestamp.fromDate(expiresAt),
-      'createdAt': Timestamp.fromDate(now),
-    });
-
-    return invitation;
   }
 
   @override
@@ -72,117 +98,76 @@ class CoachRepositoryImpl implements CoachRepository {
     required String token,
     required String acceptorId,
   }) async {
-    final inviteRef =
-        _db.collection(FirestorePaths.linkInvitations).doc(token);
-    final snap = await inviteRef.get();
-    if (!snap.exists || snap.data() == null) {
+    final result = await _dc.getLinkInvitation(token: token).execute();
+    final invite = result.data.linkInvitation;
+    if (invite == null) {
       throw StateError('Convite inválido');
     }
 
-    final data = snap.data()!;
-    final status =
-        InvitationStatusStorage.fromStorage(data['status'] as String?);
+    final status = InvitationStatusStorage.fromStorage(invite.status);
     if (status != InvitationStatus.pending) {
       throw StateError('Convite já utilizado');
     }
 
-    final expiresAt = (data['expiresAt'] as Timestamp?)?.toDate();
+    final expiresAt = fromDcTimestamp(invite.expiresAt);
     if (expiresAt != null && DateTime.now().isAfter(expiresAt)) {
-      await inviteRef.update({
-        'status': InvitationStatus.expired.storageName,
-      });
+      await _dc
+          .updateLinkInvitationStatus(
+            token: token,
+            status: InvitationStatus.expired.storageName,
+          )
+          .execute();
       throw StateError('Convite expirado');
     }
 
-    final creatorId = data['creatorId'] as String? ?? '';
     final creatorRole =
-        InvitationRoleStorage.fromStorage(data['creatorRole'] as String?);
-
+        InvitationRoleStorage.fromStorage(invite.creatorRole);
     final coachId =
-        creatorRole == InvitationRole.coach ? creatorId : acceptorId;
+        creatorRole == InvitationRole.coach ? invite.creatorId : acceptorId;
     final studentId =
-        creatorRole == InvitationRole.coach ? acceptorId : creatorId;
+        creatorRole == InvitationRole.coach ? acceptorId : invite.creatorId;
 
     if (coachId == studentId) {
       throw StateError('Não é possível vincular a si mesmo');
     }
 
-    final linkId = _uuid.v4();
-    final now = DateTime.now();
-    await _db.collection(FirestorePaths.coachLinks).doc(linkId).set({
-      'id': linkId,
-      'coachId': coachId,
-      'studentId': studentId,
-      'status': LinkStatus.active.storageName,
-      'linkedAt': Timestamp.fromDate(now),
-      'createdAt': Timestamp.fromDate(now),
-    });
-
-    await inviteRef.update({
-      'status': InvitationStatus.accepted.storageName,
-    });
+    await _dc
+        .createCoachLink(coachId: coachId, studentId: studentId)
+        .execute();
+    await _dc
+        .updateLinkInvitationStatus(
+          token: token,
+          status: InvitationStatus.accepted.storageName,
+        )
+        .execute();
   }
 
   @override
   Stream<List<AppUser>> watchStudents(String coachId) {
-    return _db
-        .collection(FirestorePaths.coachLinks)
-        .where('coachId', isEqualTo: coachId)
-        .where('status', isEqualTo: LinkStatus.active.storageName)
-        .snapshots()
-        .asyncMap((snapshot) async {
-      final ids = snapshot.docs
-          .map((doc) => doc.data()['studentId'] as String?)
-          .whereType<String>()
-          .toList();
+    return subscribeMapped(
+      () => _dc.listCoachLinksByCoach(coachId: coachId).ref(),
+      (ListCoachLinksByCoachData data) => data,
+    ).asyncMap((data) async {
+      final ids = data.coachLinks.map((l) => l.studentId).toList();
       return _fetchUsersByIds(ids);
     });
   }
 
   @override
   Stream<List<AppUser>> watchCoaches(String studentId) {
-    return _db
-        .collection(FirestorePaths.coachLinks)
-        .where('studentId', isEqualTo: studentId)
-        .where('status', isEqualTo: LinkStatus.active.storageName)
-        .snapshots()
-        .asyncMap((snapshot) async {
-      final ids = snapshot.docs
-          .map((doc) => doc.data()['coachId'] as String?)
-          .whereType<String>()
-          .toList();
+    return subscribeMapped(
+      () => _dc.listCoachLinksByStudent(studentId: studentId).ref(),
+      (ListCoachLinksByStudentData data) => data,
+    ).asyncMap((data) async {
+      final ids = data.coachLinks.map((l) => l.coachId).toList();
       return _fetchUsersByIds(ids);
     });
   }
 
-  /// Firestore `whereIn` supports at most 30 ids per query.
-  Future<List<AppUser>> _fetchUsersByIds(List<String> ids) async {
-    if (ids.isEmpty) return [];
-    final unique = ids.toSet().toList();
-    final users = <AppUser>[];
-    const chunkSize = 30;
-    for (var i = 0; i < unique.length; i += chunkSize) {
-      final end = (i + chunkSize < unique.length) ? i + chunkSize : unique.length;
-      final chunk = unique.sublist(i, end);
-      final snap = await _db
-          .collection(FirestorePaths.users)
-          .where(FieldPath.documentId, whereIn: chunk)
-          .get();
-      for (final doc in snap.docs) {
-        users.add(AppUser.fromMap(doc.id, doc.data()));
-      }
-    }
-    return users;
-  }
-
   @override
   Future<int> countFinishedWorkouts(String userId) async {
-    final snap = await _db
-        .collection(FirestorePaths.workouts)
-        .where('userId', isEqualTo: userId)
-        .limit(100)
-        .get();
-    return snap.docs.where((doc) => doc.data()['finishedAt'] != null).length;
+    final result = await _dc.countUserWorkouts(userId: userId).execute();
+    return result.data.workouts.where((w) => w.finishedAt != null).length;
   }
 
   @override
@@ -191,19 +176,15 @@ class CoachRepositoryImpl implements CoachRepository {
     required String studentId,
     required String name,
   }) async {
-    final id = _uuid.v4();
-    final workout = Workout(
-      id: id,
-      userId: studentId,
-      name: name,
-      startedAt: DateTime.now(),
-      exercises: const [],
-      assignedByCoachId: coachId,
-      source: WorkoutSource.coachAssigned,
-    );
-    await _db
-        .collection(FirestorePaths.workouts)
-        .doc(id)
-        .set(WorkoutMapper.toMap(workout));
+    await _dc
+        .assignWorkoutToStudent(
+          id: _uuid.v4(),
+          studentId: studentId,
+          name: name,
+          startedAt: toDcTimestamp(DateTime.now()),
+          coachId: coachId,
+          source: WorkoutSource.coachAssigned.dbIndex,
+        )
+        .execute();
   }
 }

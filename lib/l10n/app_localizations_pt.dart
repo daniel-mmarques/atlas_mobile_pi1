@@ -66,19 +66,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get themeLight => 'Light';
 
   @override
+  String get themeSakura => 'Sakura';
+
+  @override
   String get themeSunset => 'Sunset';
+
+  @override
+  String get themeArctic => 'Arctic';
+
+  @override
+  String get themeCoffee => 'Coffee';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get themeOcean => 'Ocean';
 
   @override
   String get themeCyberpunk => 'Cyberpunk 2077';
 
   @override
   String get themeStorm => 'Storm';
-
-  @override
-  String get themeOcean => 'Ocean';
-
-  @override
-  String get themeDark => 'Dark';
 
   @override
   String get themeMidnight => 'Midnight';
@@ -98,6 +107,47 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get authForgotPassword => 'Esqueceu a senha?';
+
+  @override
+  String get authForgotPasswordTitle => 'Redefinir senha';
+
+  @override
+  String get authForgotPasswordSubtitle =>
+      'Informe o email da conta. Enviaremos um link para criar uma nova senha.';
+
+  @override
+  String get authForgotPasswordSend => 'Enviar link';
+
+  @override
+  String get authForgotPasswordSent =>
+      'Se essa conta existir, enviamos um email com o link para redefinir a senha.';
+
+  @override
+  String get authForgotPasswordBack => 'Voltar ao login';
+
+  @override
+  String get authVerifyTitle => 'Confirme seu email';
+
+  @override
+  String authVerifySubtitle(String email) {
+    return 'Enviamos um link para $email. Abra o email, clique no link e volte aqui.';
+  }
+
+  @override
+  String get authVerifyResend => 'Reenviar email';
+
+  @override
+  String get authVerifyResent => 'Email reenviado.';
+
+  @override
+  String get authVerifyAlreadyDone => 'Já verifiquei';
+
+  @override
+  String get authVerifyStillPending =>
+      'Ainda não detectamos a confirmação. Abra o link do email e tente de novo.';
+
+  @override
+  String get authVerifySignOut => 'Usar outro email';
 
   @override
   String get authEmailHint => 'Email';
@@ -414,6 +464,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String get widgetNotLogged => 'Sem registro';
 
   @override
+  String get widgetThisMonth => 'Este mês';
+
+  @override
+  String get widgetAvgPerWeek => 'Média/sem';
+
+  @override
+  String get widgetWeeklyVolume => 'Volume semanal';
+
+  @override
+  String get widgetAvgSession => 'Sessão média';
+
+  @override
+  String get widgetDaysStreak => 'dias de sequência';
+
+  @override
+  String get widgetDayStreak => 'dia de sequência';
+
+  @override
+  String widgetBestStreak(int count) {
+    return 'Melhor: $count';
+  }
+
+  @override
+  String get widgetPersonalRecords => 'Recordes pessoais';
+
+  @override
+  String get widgetNoPrsYet => 'Sem PRs ainda';
+
+  @override
+  String widgetMonthCount(int count) {
+    return '$count este mês';
+  }
+
+  @override
   String get widgetCreateTitle => 'Criar um widget';
 
   @override
@@ -537,7 +621,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatTitle => 'Chat';
 
   @override
-  String get workoutsTitle => 'Treinos';
+  String get workoutsTitle => 'Rotinas';
 
   @override
   String get workoutsStartEmpty => 'Treino vazio';
@@ -658,6 +742,42 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileDuplicate => 'Duplicar';
+
+  @override
+  String get profileFollow => 'Seguir';
+
+  @override
+  String get profileCustomizeBanner => 'Personalizar capa';
+
+  @override
+  String get profileChoosePhoto => 'Escolher foto';
+
+  @override
+  String get profileBannerPresets => 'Cores';
+
+  @override
+  String get profileClearPhoto => 'Remover foto';
+
+  @override
+  String get profileBannerUpdated => 'Capa atualizada';
+
+  @override
+  String get profileBannerError => 'Não foi possível atualizar a capa';
+
+  @override
+  String get profileEditTitle => 'Editar perfil';
+
+  @override
+  String get profileEditSave => 'Salvar';
+
+  @override
+  String get profileEditPhoto => 'Alterar foto';
+
+  @override
+  String get profileEditSaved => 'Perfil atualizado';
+
+  @override
+  String get profileEditError => 'Não foi possível salvar o perfil';
 
   @override
   String get coachTitle => 'Coach';

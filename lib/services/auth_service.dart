@@ -41,6 +41,12 @@ class AuthService extends ChangeNotifier {
   bool get needsProfileSetup => pendingProfileSetup && !isProfileCompleted;
   bool get isCoach => appUser?.isCoach ?? false;
 
+  bool get needsEmailVerification {
+    final current = user;
+    if (current == null || current.emailVerified) return false;
+    return current.providerData.any((info) => info.providerId == 'password');
+  }
+
   AuthService listen() {
     _authSub = _auth.authStateChanges().listen((newUser) async {
       user = newUser;
@@ -83,7 +89,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _ensureFirestoreProfile({
+  Future<void> _ensureUserProfile({
     required firebase_auth.User firebaseUser,
     bool requireProfileSetupIfIncomplete = false,
     String? fallbackName,
@@ -118,6 +124,11 @@ class AuthService extends ChangeNotifier {
           firebaseUser.uid,
           firebaseUser.email ?? email.trim(),
         );
+        try {
+          await firebaseUser.sendEmailVerification();
+        } on firebase_auth.FirebaseAuthException {
+          // Conta já criada; o usuário pode reenviar na tela de verificação.
+        }
       }
 
       _refreshCurrentUser();
@@ -178,7 +189,7 @@ class AuthService extends ChangeNotifier {
         throw AuthException(_l10n.authGoogleFailed);
       }
 
-      await _ensureFirestoreProfile(
+      await _ensureUserProfile(
         firebaseUser: firebaseUser,
         requireProfileSetupIfIncomplete: true,
         fallbackName: googleUser.displayName,
@@ -232,7 +243,7 @@ class AuthService extends ChangeNotifier {
         appleCredential.familyName,
       ].whereType<String>().where((p) => p.trim().isNotEmpty).join(' ');
 
-      await _ensureFirestoreProfile(
+      await _ensureUserProfile(
         firebaseUser: firebaseUser,
         requireProfileSetupIfIncomplete: true,
         fallbackName: fullName.isEmpty ? null : fullName,
@@ -251,6 +262,41 @@ class AuthService extends ChangeNotifier {
       throw AuthException(
         'Não foi possível entrar com Apple. Ative o provedor no Firebase e a capability no iOS.',
       );
+    }
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthError(e);
+    } catch (_) {
+      throw AuthException(_l10n.authGenericError);
+    }
+  }
+
+  Future<void> sendEmailVerification() async {
+    try {
+      final current = _auth.currentUser;
+      if (current == null) {
+        throw AuthException(_l10n.authGenericError);
+      }
+      await current.sendEmailVerification();
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthError(e);
+    } catch (_) {
+      throw AuthException(_l10n.authGenericError);
+    }
+  }
+
+  Future<void> reloadCurrentUser() async {
+    try {
+      await _auth.currentUser?.reload();
+      _refreshCurrentUser();
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthError(e);
+    } catch (_) {
+      throw AuthException(_l10n.authGenericError);
     }
   }
 

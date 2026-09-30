@@ -214,11 +214,41 @@ abstract class AppLocalizations {
   /// **'Light'**
   String get themeLight;
 
+  /// No description provided for @themeSakura.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sakura'**
+  String get themeSakura;
+
   /// No description provided for @themeSunset.
   ///
   /// In pt, this message translates to:
   /// **'Sunset'**
   String get themeSunset;
+
+  /// No description provided for @themeArctic.
+  ///
+  /// In pt, this message translates to:
+  /// **'Arctic'**
+  String get themeArctic;
+
+  /// No description provided for @themeCoffee.
+  ///
+  /// In pt, this message translates to:
+  /// **'Coffee'**
+  String get themeCoffee;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In pt, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @themeOcean.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ocean'**
+  String get themeOcean;
 
   /// No description provided for @themeCyberpunk.
   ///
@@ -231,18 +261,6 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Storm'**
   String get themeStorm;
-
-  /// No description provided for @themeOcean.
-  ///
-  /// In pt, this message translates to:
-  /// **'Ocean'**
-  String get themeOcean;
-
-  /// No description provided for @themeDark.
-  ///
-  /// In pt, this message translates to:
-  /// **'Dark'**
-  String get themeDark;
 
   /// No description provided for @themeMidnight.
   ///
@@ -279,6 +297,78 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Esqueceu a senha?'**
   String get authForgotPassword;
+
+  /// No description provided for @authForgotPasswordTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Redefinir senha'**
+  String get authForgotPasswordTitle;
+
+  /// No description provided for @authForgotPasswordSubtitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe o email da conta. Enviaremos um link para criar uma nova senha.'**
+  String get authForgotPasswordSubtitle;
+
+  /// No description provided for @authForgotPasswordSend.
+  ///
+  /// In pt, this message translates to:
+  /// **'Enviar link'**
+  String get authForgotPasswordSend;
+
+  /// No description provided for @authForgotPasswordSent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Se essa conta existir, enviamos um email com o link para redefinir a senha.'**
+  String get authForgotPasswordSent;
+
+  /// No description provided for @authForgotPasswordBack.
+  ///
+  /// In pt, this message translates to:
+  /// **'Voltar ao login'**
+  String get authForgotPasswordBack;
+
+  /// No description provided for @authVerifyTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Confirme seu email'**
+  String get authVerifyTitle;
+
+  /// No description provided for @authVerifySubtitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Enviamos um link para {email}. Abra o email, clique no link e volte aqui.'**
+  String authVerifySubtitle(String email);
+
+  /// No description provided for @authVerifyResend.
+  ///
+  /// In pt, this message translates to:
+  /// **'Reenviar email'**
+  String get authVerifyResend;
+
+  /// No description provided for @authVerifyResent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Email reenviado.'**
+  String get authVerifyResent;
+
+  /// No description provided for @authVerifyAlreadyDone.
+  ///
+  /// In pt, this message translates to:
+  /// **'Já verifiquei'**
+  String get authVerifyAlreadyDone;
+
+  /// No description provided for @authVerifyStillPending.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ainda não detectamos a confirmação. Abra o link do email e tente de novo.'**
+  String get authVerifyStillPending;
+
+  /// No description provided for @authVerifySignOut.
+  ///
+  /// In pt, this message translates to:
+  /// **'Usar outro email'**
+  String get authVerifySignOut;
 
   /// No description provided for @authEmailHint.
   ///
@@ -898,6 +988,66 @@ abstract class AppLocalizations {
   /// **'Sem registro'**
   String get widgetNotLogged;
 
+  /// No description provided for @widgetThisMonth.
+  ///
+  /// In pt, this message translates to:
+  /// **'Este mês'**
+  String get widgetThisMonth;
+
+  /// No description provided for @widgetAvgPerWeek.
+  ///
+  /// In pt, this message translates to:
+  /// **'Média/sem'**
+  String get widgetAvgPerWeek;
+
+  /// No description provided for @widgetWeeklyVolume.
+  ///
+  /// In pt, this message translates to:
+  /// **'Volume semanal'**
+  String get widgetWeeklyVolume;
+
+  /// No description provided for @widgetAvgSession.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sessão média'**
+  String get widgetAvgSession;
+
+  /// No description provided for @widgetDaysStreak.
+  ///
+  /// In pt, this message translates to:
+  /// **'dias de sequência'**
+  String get widgetDaysStreak;
+
+  /// No description provided for @widgetDayStreak.
+  ///
+  /// In pt, this message translates to:
+  /// **'dia de sequência'**
+  String get widgetDayStreak;
+
+  /// No description provided for @widgetBestStreak.
+  ///
+  /// In pt, this message translates to:
+  /// **'Melhor: {count}'**
+  String widgetBestStreak(int count);
+
+  /// No description provided for @widgetPersonalRecords.
+  ///
+  /// In pt, this message translates to:
+  /// **'Recordes pessoais'**
+  String get widgetPersonalRecords;
+
+  /// No description provided for @widgetNoPrsYet.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem PRs ainda'**
+  String get widgetNoPrsYet;
+
+  /// No description provided for @widgetMonthCount.
+  ///
+  /// In pt, this message translates to:
+  /// **'{count} este mês'**
+  String widgetMonthCount(int count);
+
   /// No description provided for @widgetCreateTitle.
   ///
   /// In pt, this message translates to:
@@ -1135,7 +1285,7 @@ abstract class AppLocalizations {
   /// No description provided for @workoutsTitle.
   ///
   /// In pt, this message translates to:
-  /// **'Treinos'**
+  /// **'Rotinas'**
   String get workoutsTitle;
 
   /// No description provided for @workoutsStartEmpty.
@@ -1365,6 +1515,78 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Duplicar'**
   String get profileDuplicate;
+
+  /// No description provided for @profileFollow.
+  ///
+  /// In pt, this message translates to:
+  /// **'Seguir'**
+  String get profileFollow;
+
+  /// No description provided for @profileCustomizeBanner.
+  ///
+  /// In pt, this message translates to:
+  /// **'Personalizar capa'**
+  String get profileCustomizeBanner;
+
+  /// No description provided for @profileChoosePhoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'Escolher foto'**
+  String get profileChoosePhoto;
+
+  /// No description provided for @profileBannerPresets.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cores'**
+  String get profileBannerPresets;
+
+  /// No description provided for @profileClearPhoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'Remover foto'**
+  String get profileClearPhoto;
+
+  /// No description provided for @profileBannerUpdated.
+  ///
+  /// In pt, this message translates to:
+  /// **'Capa atualizada'**
+  String get profileBannerUpdated;
+
+  /// No description provided for @profileBannerError.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível atualizar a capa'**
+  String get profileBannerError;
+
+  /// No description provided for @profileEditTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar perfil'**
+  String get profileEditTitle;
+
+  /// No description provided for @profileEditSave.
+  ///
+  /// In pt, this message translates to:
+  /// **'Salvar'**
+  String get profileEditSave;
+
+  /// No description provided for @profileEditPhoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'Alterar foto'**
+  String get profileEditPhoto;
+
+  /// No description provided for @profileEditSaved.
+  ///
+  /// In pt, this message translates to:
+  /// **'Perfil atualizado'**
+  String get profileEditSaved;
+
+  /// No description provided for @profileEditError.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível salvar o perfil'**
+  String get profileEditError;
 
   /// No description provided for @coachTitle.
   ///

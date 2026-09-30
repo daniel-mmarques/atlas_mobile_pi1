@@ -16,6 +16,9 @@ class AppUser {
     this.activityLevel,
     this.role = UserRole.student,
     this.profileCompleted = false,
+    this.bannerPreset,
+    this.bannerUrl,
+    this.photoUrl,
     this.createdAt,
   });
 
@@ -30,6 +33,9 @@ class AppUser {
   final ActivityLevel? activityLevel;
   final UserRole role;
   final bool profileCompleted;
+  final String? bannerPreset;
+  final String? bannerUrl;
+  final String? photoUrl;
   final DateTime? createdAt;
 
   bool get isCoach => role == UserRole.coach;
@@ -56,6 +62,11 @@ class AppUser {
     ActivityLevel? activityLevel,
     UserRole? role,
     bool? profileCompleted,
+    String? bannerPreset,
+    String? bannerUrl,
+    bool clearBannerUrl = false,
+    String? photoUrl,
+    bool clearPhotoUrl = false,
   }) {
     return AppUser(
       id: id,
@@ -69,6 +80,9 @@ class AppUser {
       activityLevel: activityLevel ?? this.activityLevel,
       role: role ?? this.role,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      bannerPreset: bannerPreset ?? this.bannerPreset,
+      bannerUrl: clearBannerUrl ? null : (bannerUrl ?? this.bannerUrl),
+      photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
       createdAt: createdAt,
     );
   }
@@ -78,7 +92,6 @@ class AppUser {
       'uid': id,
       'email': email,
       'username': username,
-      'usernameLower': username?.toLowerCase(),
       'name': name,
       'gender': gender?.name,
       'height': height,
@@ -87,6 +100,9 @@ class AppUser {
       'activityLevel': activityLevel?.name,
       'role': role.storageName,
       'profileCompleted': profileCompleted,
+      'bannerPreset': bannerPreset,
+      'bannerUrl': bannerUrl,
+      'photoUrl': photoUrl,
       'createdAt': createdAt,
     };
   }
@@ -105,6 +121,9 @@ class AppUser {
           ActivityLevel.fromStorage(data['activityLevel'] as String?),
       role: UserRoleStorage.fromStorage(data['role'] as String?),
       profileCompleted: data['profileCompleted'] as bool? ?? false,
+      bannerPreset: data['bannerPreset'] as String?,
+      bannerUrl: data['bannerUrl'] as String?,
+      photoUrl: data['photoUrl'] as String?,
       createdAt: _parseDate(data['createdAt']),
     );
   }

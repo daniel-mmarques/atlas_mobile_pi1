@@ -26,7 +26,7 @@ InputDecoration authInputDecoration(
       color: secondary,
       fontSize: hintSize,
     ),
-    prefixIcon: Icon(icon, color: accent),
+    prefixIcon: Icon(icon, color: secondary),
     suffixIcon: suffix,
     filled: true,
     fillColor: AppColors.surfaceSecondary(context),

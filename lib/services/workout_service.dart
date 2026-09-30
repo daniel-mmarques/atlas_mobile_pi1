@@ -5,7 +5,7 @@ import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout_set.d
 import 'package:atlas_mobile_pi1/features/workouts/domain/entities/workout_template.dart';
 
 /// Facade over [WorkoutsRepository] with broadcast stream caching so multiple
-/// widgets share one Firestore listener per (userId, limit) pair.
+/// widgets share one SQL Connect subscription per (userId, limit) pair.
 class WorkoutService {
   WorkoutService(this._repository);
 
@@ -57,6 +57,10 @@ class WorkoutService {
             id: e.id,
             name: e.name,
             imageUrl: e.imageUrl,
+            videoUrl: e.videoUrl,
+            bodyPart: e.bodyPart,
+            target: e.target,
+            equipment: e.equipment,
             rest: e.rest,
             note: e.note,
             sets: e.sets

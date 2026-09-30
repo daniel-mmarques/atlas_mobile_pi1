@@ -18,6 +18,11 @@ abstract class AppThemes {
   /// Compat: tema escuro AMOLED padrão.
   static ThemeData get darkTheme => of(AppThemeId.dark);
 
+  static ThemeData? _authCache;
+
+  /// Tema fixo preto / branco / prata do funil de autenticação.
+  static ThemeData get auth => _authCache ??= _build(AppPalettes.auth);
+
   static ThemeData _build(AppPalette palette) {
     final colorScheme = ColorScheme(
       brightness: palette.brightness,

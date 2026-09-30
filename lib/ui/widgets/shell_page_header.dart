@@ -10,17 +10,19 @@ class ShellPageHeader extends StatelessWidget {
     required this.title,
     this.actions = const [],
     this.onTitleTap,
+    this.titleStyle,
   });
 
   final String title;
   final List<Widget> actions;
   final VoidCallback? onTitleTap;
+  final TextStyle? titleStyle;
 
   @override
   Widget build(BuildContext context) {
     final titleText = Text(
       title,
-      style: AppTypography.shellTitle(context),
+      style: titleStyle ?? AppTypography.shellTitle(context),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

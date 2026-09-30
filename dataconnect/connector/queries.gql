@@ -1,0 +1,440 @@
+# ---------- Users ----------
+
+query GetUser($id: String!) @auth(level: USER) {
+  user(id: $id) {
+    id
+    email
+    name
+    nameLower
+    username
+    gender
+    height
+    weight
+    birthDate
+    activityLevel
+    role
+    profileCompleted
+    bannerPreset
+    bannerUrl
+    photoUrl
+    createdAt
+  }
+}
+
+query GetUserByUsername($username: String!) @auth(level: USER) {
+  users(where: { username: { eq: $username } }, limit: 1) {
+    id
+    email
+    name
+    username
+    gender
+    height
+    weight
+    birthDate
+    activityLevel
+    role
+    profileCompleted
+    bannerPreset
+    bannerUrl
+    photoUrl
+    createdAt
+  }
+}
+
+query SearchUsersByUsername($q: String!, $end: String!) @auth(level: USER) {
+  users(
+    where: {
+      username: { ge: $q, le: $end }
+    }
+    limit: 20
+  ) {
+    id
+    email
+    name
+    username
+    gender
+    height
+    weight
+    birthDate
+    activityLevel
+    role
+    profileCompleted
+    bannerPreset
+    bannerUrl
+    photoUrl
+    createdAt
+  }
+}
+
+query SearchUsersByName($q: String!, $end: String!) @auth(level: USER) {
+  users(
+    where: {
+      nameLower: { ge: $q, le: $end }
+    }
+    limit: 20
+  ) {
+    id
+    email
+    name
+    username
+    gender
+    height
+    weight
+    birthDate
+    activityLevel
+    role
+    profileCompleted
+    bannerPreset
+    bannerUrl
+    photoUrl
+    createdAt
+  }
+}
+
+query GetUsersByIds($ids: [String!]!) @auth(level: USER) {
+  users(where: { id: { in: $ids } }) {
+    id
+    email
+    name
+    username
+    gender
+    height
+    weight
+    birthDate
+    activityLevel
+    role
+    profileCompleted
+    bannerPreset
+    bannerUrl
+    photoUrl
+    createdAt
+  }
+}
+
+# ---------- Workouts ----------
+
+query GetWorkout($id: UUID!) @auth(level: USER) {
+  workout(id: $id) {
+    id
+    user {
+      id
+    }
+    name
+    startedAt
+    finishedAt
+    exercisesJson
+    volume
+    isPublic
+    assignedByCoachId
+    source
+    templateId
+  }
+}
+
+query ListUserWorkouts($userId: String!, $limit: Int) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "CreateWorkout" })
+@refresh(onMutationExecuted: { operation: "UpsertWorkout" })
+@refresh(onMutationExecuted: { operation: "DeleteWorkout" })
+@refresh(onMutationExecuted: { operation: "AssignWorkoutToStudent" }) {
+  workouts(
+    where: { user: { id: { eq: $userId } } }
+    orderBy: [{ startedAt: DESC }]
+    limit: $limit
+  ) {
+    id
+    user {
+      id
+    }
+    name
+    startedAt
+    finishedAt
+    exercisesJson
+    volume
+    isPublic
+    assignedByCoachId
+    source
+    templateId
+  }
+}
+
+# ---------- Templates ----------
+
+query GetTemplate($id: UUID!) @auth(level: USER) {
+  template(id: $id) {
+    id
+    user {
+      id
+    }
+    name
+    exercisesJson
+    notes
+    defaultRestSeconds
+    scheduleMode
+    weekdaysJson
+    restDaysBetween
+    createdAt
+    updatedAt
+  }
+}
+
+query ListUserTemplates($userId: String!) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "UpsertTemplate" })
+@refresh(onMutationExecuted: { operation: "DeleteTemplate" }) {
+  templates(where: { user: { id: { eq: $userId } } }) {
+    id
+    user {
+      id
+    }
+    name
+    exercisesJson
+    notes
+    defaultRestSeconds
+    scheduleMode
+    weekdaysJson
+    restDaysBetween
+    createdAt
+    updatedAt
+  }
+}
+
+# ---------- Posts ----------
+
+query ListPublicPosts($limit: Int) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "CreatePost" }) {
+  posts(
+    where: { isPublic: { eq: true } }
+    orderBy: [{ createdAt: DESC }]
+    limit: $limit
+  ) {
+    id
+    user {
+      id
+      name
+      username
+    }
+    caption
+    imageUrl
+    likes
+    comments
+    volume
+    isPublic
+    createdAt
+  }
+}
+
+query ListUserPosts($userId: String!, $limit: Int) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "CreatePost" }) {
+  posts(
+    where: { user: { id: { eq: $userId } } }
+    orderBy: [{ createdAt: DESC }]
+    limit: $limit
+  ) {
+    id
+    user {
+      id
+      name
+      username
+    }
+    caption
+    imageUrl
+    likes
+    comments
+    volume
+    isPublic
+    createdAt
+  }
+}
+
+# ---------- Conversations ----------
+
+query GetConversation($id: String!) @auth(level: USER) {
+  conversation(id: $id) {
+    id
+    type
+    title
+    titleLower
+    lastMessage
+    lastSenderName
+    updatedAt
+    createdBy
+    inviteToken
+    conversationMembers_on_conversation {
+      user {
+        id
+        name
+        username
+      }
+    }
+  }
+}
+
+query ListInbox($userId: String!) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "SendMessage" })
+@refresh(onMutationExecuted: { operation: "UpsertConversation" })
+@refresh(onMutationExecuted: { operation: "AddConversationMember" }) {
+  conversationMembers(
+    where: { user: { id: { eq: $userId } } }
+  ) {
+    conversation {
+      id
+      type
+      title
+      titleLower
+      lastMessage
+      lastSenderName
+      updatedAt
+      createdBy
+      inviteToken
+      conversationMembers_on_conversation {
+        user {
+          id
+          name
+          username
+        }
+      }
+    }
+  }
+}
+
+query GetConversationByInviteToken($token: String!) @auth(level: USER) {
+  conversations(where: { inviteToken: { eq: $token } }, limit: 1) {
+    id
+    type
+    title
+    titleLower
+    lastMessage
+    lastSenderName
+    updatedAt
+    createdBy
+    inviteToken
+    conversationMembers_on_conversation {
+      user {
+        id
+        name
+        username
+      }
+    }
+  }
+}
+
+query SearchCommunities($q: String!, $end: String!) @auth(level: USER) {
+  conversations(
+    where: {
+      _and: [
+        { type: { eq: "community" } }
+        { titleLower: { ge: $q, le: $end } }
+      ]
+    }
+    limit: 20
+  ) {
+    id
+    type
+    title
+    titleLower
+    lastMessage
+    lastSenderName
+    updatedAt
+    createdBy
+    inviteToken
+    conversationMembers_on_conversation {
+      user {
+        id
+        name
+        username
+      }
+    }
+  }
+}
+
+query ListMessages($conversationId: String!, $limit: Int) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "SendMessage" })
+@refresh(onMutationExecuted: { operation: "DeleteExpiredMessages" }) {
+  messages(
+    where: { conversation: { id: { eq: $conversationId } } }
+    orderBy: [{ createdAt: DESC }]
+    limit: $limit
+  ) {
+    id
+    conversation {
+      id
+    }
+    text
+    senderId
+    senderName
+    createdAt
+    expiresAt
+  }
+}
+
+query ListExpiredGeneralMessages($cutoff: Timestamp!, $limit: Int) @auth(level: USER) {
+  messages(
+    where: {
+      _and: [
+        { conversation: { id: { eq: "general" } } }
+        { createdAt: { lt: $cutoff } }
+      ]
+    }
+    limit: $limit
+  ) {
+    id
+  }
+}
+
+# ---------- Coach ----------
+
+query ListCoachLinksByCoach($coachId: String!) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "CreateCoachLink" }) {
+  coachLinks(
+    where: {
+      _and: [
+        { coachId: { eq: $coachId } }
+        { status: { eq: "active" } }
+      ]
+    }
+  ) {
+    id
+    coachId
+    studentId
+    status
+    linkedAt
+  }
+}
+
+query ListCoachLinksByStudent($studentId: String!) @auth(level: USER)
+@refresh(onMutationExecuted: { operation: "CreateCoachLink" }) {
+  coachLinks(
+    where: {
+      _and: [
+        { studentId: { eq: $studentId } }
+        { status: { eq: "active" } }
+      ]
+    }
+  ) {
+    id
+    coachId
+    studentId
+    status
+    linkedAt
+  }
+}
+
+query GetLinkInvitation($token: String!) @auth(level: USER) {
+  linkInvitation(key: { token: $token }) {
+    token
+    creatorId
+    creatorRole
+    status
+    expiresAt
+    createdAt
+  }
+}
+
+query CountUserWorkouts($userId: String!) @auth(level: USER) {
+  workouts(
+    where: { user: { id: { eq: $userId } } }
+    limit: 100
+  ) {
+    id
+    finishedAt
+  }
+}

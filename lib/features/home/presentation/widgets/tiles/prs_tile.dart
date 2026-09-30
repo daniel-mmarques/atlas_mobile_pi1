@@ -56,6 +56,8 @@ class PrsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return StreamBuilder<List<Workout>>(
       stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
@@ -71,24 +73,25 @@ class PrsTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  hasData ? 'Personal records' : context.l10n.widgetNotLogged,
-                  style: TextStyle(
-                    color: AppColors.textSecondary(context),
-                    fontSize: 12,
-                  ),
+                HomeWidgetChrome(
+                  title: name,
+                  subtitle: hasData
+                      ? l10n.widgetPersonalRecords
+                      : l10n.widgetNotLogged,
                 ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: items.isEmpty
-                      ? const SizedBox.shrink()
+                      ? Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            l10n.widgetNoPrsYet,
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                        )
                       : Column(
                           children: [
                             for (final pr in items)
@@ -100,11 +103,16 @@ class PrsTile extends StatelessWidget {
                                         pr.exerciseName,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12),
+                                        style: TextStyle(
+                                          color:
+                                              AppColors.textPrimary(context),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                     Text(
-                                      '${pr.weight.round()}kg × ${pr.reps}',
+                                      '${pr.weight.round()}${l10n.commonKg} × ${pr.reps}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 12,
@@ -125,7 +133,8 @@ class PrsTile extends StatelessWidget {
         return HomeTileNumber(
           value: '$count',
           title: name,
-          subtitle: hasData ? 'Personal records' : context.l10n.widgetNotLogged,
+          subtitle:
+              hasData ? l10n.widgetPersonalRecords : l10n.widgetNotLogged,
         );
       },
     );

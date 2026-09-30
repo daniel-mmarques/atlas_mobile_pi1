@@ -33,7 +33,7 @@ class RoutineBuilderStep extends StatelessWidget {
 
   Future<void> _openLibrary(BuildContext context) async {
     final controller = context.read<CreateRoutineController>();
-    final selected = await showSeedExercisePicker(context);
+    final selected = await showExercisePicker(context);
     if (selected == null || !context.mounted) return;
     controller.addExercises(selected);
   }
@@ -383,28 +383,62 @@ class RoutineBuilderStep extends StatelessWidget {
           ),
         const SizedBox(height: AppSpacing.sectionGap + AppSpacing.sm),
         Expanded(
-          child: ListView(
+          child: ReorderableListView.builder(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.sheetPaddingH,
               0,
               AppSpacing.sheetPaddingH,
               contentBottomPadding,
             ),
-            children: [
-              for (var i = 0; i < controller.exercises.length; i++)
-                _ExerciseTile(
-                  key: ValueKey(
-                    '${controller.exercises[i].id}_$i',
-                  ),
-                  index: i,
+            buildDefaultDragHandles: false,
+            itemCount: controller.exercises.length,
+            proxyDecorator: (child, index, animation) {
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (overlayContext, _) {
+                  final t = Curves.easeOut.transform(animation.value);
+                  return ChangeNotifierProvider<CreateRoutineController>.value(
+                    value: controller,
+                    child: Material(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      elevation: 6 * t,
+                      shadowColor: Colors.black54,
+                      borderRadius: BorderRadius.circular(12),
+                      child: child,
+                    ),
+                  );
+                },
+              );
+            },
+            onReorder: controller.reorderExercises,
+            footer: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _AddExercisesRow(onTap: () => _openLibrary(context)),
+                const Divider(height: 36),
+                _WorkoutNotesField(
+                  initialValue: controller.notes,
+                  onChanged: controller.updateNotes,
                 ),
-              _AddExercisesRow(onTap: () => _openLibrary(context)),
-              const Divider(height: 36),
-              _WorkoutNotesField(
-                initialValue: controller.notes,
-                onChanged: controller.updateNotes,
-              ),
-            ],
+              ],
+            ),
+            itemBuilder: (context, i) {
+              final exercise = controller.exercises[i];
+              return _ExerciseTile(
+                key: ValueKey(exercise.id),
+                index: i,
+                exerciseId: exercise.id,
+                name: exercise.name,
+                imageUrl: exercise.imageUrl,
+                subtitle: [
+                  if (exercise.target.isNotEmpty) exercise.target,
+                  if (exercise.bodyPart.isNotEmpty) exercise.bodyPart,
+                ].join(' · '),
+                rest: exercise.rest,
+                onOpen: () => controller.openExercise(i),
+                onRemove: () => controller.removeExercise(i),
+              );
+            },
           ),
         ),
         Padding(
@@ -538,72 +572,109 @@ class _ExerciseTile extends StatelessWidget {
   const _ExerciseTile({
     super.key,
     required this.index,
+    required this.exerciseId,
+    required this.name,
+    required this.imageUrl,
+    required this.subtitle,
+    required this.rest,
+    required this.onOpen,
+    required this.onRemove,
   });
 
   final int index;
+  final String exerciseId;
+  final String name;
+  final String imageUrl;
+  final String subtitle;
+  final Duration rest;
+  final VoidCallback onOpen;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<CreateRoutineController>();
-    final exercise = controller.exercises[index];
     final primary = AppColors.textPrimary(context);
     final secondary = AppColors.textSecondary(context);
     final l10n = context.l10n;
     final restLabel = l10n.routineRestTimerLabel(
-      RoutineBuilderStep.formatRest(exercise.rest),
+      RoutineBuilderStep.formatRest(rest),
     );
 
-    return Dismissible(
-      key: ValueKey('dismiss_${exercise.id}_$index'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.error,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
-      ),
-      onDismissed: (_) => controller.removeExercise(index),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-        onTap: () => controller.openExercise(index),
-        leading: Container(
-          width: 48,
-          height: 48,
+    return ReorderableDelayedDragStartListener(
+      index: index,
+      child: Dismissible(
+        key: ValueKey('dismiss_$exerciseId'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border(context), width: 1.5),
+            color: AppColors.error,
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.check_rounded, color: primary, size: 22),
+          child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
         ),
-        title: Text(
-          exercise.name,
-          style: TextStyle(
-            color: primary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+        onDismissed: (_) => onRemove(),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          onTap: onOpen,
+          leading: ClipOval(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => ColoredBox(
+                        color: AppColors.component(context),
+                        child: Icon(Icons.fitness_center, color: primary),
+                      ),
+                    )
+                  : ColoredBox(
+                      color: AppColors.component(context),
+                      child: Icon(Icons.fitness_center, color: primary),
+                    ),
+            ),
           ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              Icon(Icons.timer_outlined, size: 16, color: secondary),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  restLabel,
-                  style: TextStyle(color: secondary, fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
+          title: Text(
+            name,
+            style: TextStyle(
+              color: primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: secondary, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                Row(
+                  children: [
+                    Icon(Icons.timer_outlined, size: 16, color: secondary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        restLabel,
+                        style: TextStyle(color: secondary, fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          trailing: Icon(Icons.chevron_right_rounded, color: secondary, size: 28),
         ),
-        trailing: Icon(Icons.chevron_right_rounded, color: secondary, size: 28),
       ),
     );
   }

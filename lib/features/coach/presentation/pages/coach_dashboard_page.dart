@@ -33,7 +33,7 @@ class CoachDashboardPage extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_2_rounded),
+            icon: const Icon(Icons.qr_code_rounded),
             onPressed: () => context.push(AppRoutes.coachLink),
           ),
         ],
@@ -71,7 +71,7 @@ class CoachDashboardPage extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xxl),
                     AppActionButton(
                       label: l10n.coachGenerateQr,
-                      icon: Icons.qr_code_2_rounded,
+                      icon: Icons.qr_code_rounded,
                       emphasized: true,
                       onTap: () => context.push(AppRoutes.coachLink),
                     ),

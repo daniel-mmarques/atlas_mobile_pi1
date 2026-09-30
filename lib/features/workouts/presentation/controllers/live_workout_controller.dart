@@ -170,12 +170,25 @@ class LiveWorkoutController extends ChangeNotifier {
     });
   }
 
-  void addExercise({required String exerciseId, required String name}) {
+  void addExercise({
+    required String exerciseId,
+    required String name,
+    String imageUrl = '',
+    String videoUrl = '',
+    String bodyPart = '',
+    String target = '',
+    String equipment = '',
+  }) {
     final exercises = [
       ...workout.exercises,
       Exercise(
         id: exerciseId,
         name: name,
+        imageUrl: imageUrl,
+        videoUrl: videoUrl,
+        bodyPart: bodyPart,
+        target: target,
+        equipment: equipment,
         sets: [
           WorkoutSet(reps: 10, weight: 20),
           WorkoutSet(reps: 10, weight: 20),

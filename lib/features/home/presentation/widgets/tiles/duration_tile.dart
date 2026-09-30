@@ -36,6 +36,8 @@ class DurationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return StreamBuilder<List<Workout>>(
       stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
@@ -46,7 +48,7 @@ class DurationTile extends StatelessWidget {
           value: _format(minutes),
           unit: _unit(minutes),
           title: name,
-          subtitle: hasData ? 'Average session' : context.l10n.widgetNotLogged,
+          subtitle: hasData ? l10n.widgetAvgSession : l10n.widgetNotLogged,
         );
       },
     );

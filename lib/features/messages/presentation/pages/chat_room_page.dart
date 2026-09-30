@@ -167,7 +167,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         actions: [
           if (_conversation?.type == ConversationType.community)
             IconButton(
-              icon: const Icon(Icons.qr_code_2_rounded),
+              icon: const Icon(Icons.qr_code_rounded),
               onPressed: () => _showCommunityInvite(context),
             ),
         ],

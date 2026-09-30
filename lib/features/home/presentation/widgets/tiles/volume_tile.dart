@@ -22,6 +22,8 @@ class VolumeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return StreamBuilder<List<Workout>>(
       stream: context.read<WorkoutService>().watchUserWorkoutsMetrics(userId),
       builder: (context, snapshot) {
@@ -33,6 +35,7 @@ class VolumeTile extends StatelessWidget {
         if (style == HomeWidgetStyle.chart) {
           return _VolumeChart(
             values: weekdayVolumes,
+            total: current,
             name: name,
             hasData: hasData,
           );
@@ -40,9 +43,9 @@ class VolumeTile extends StatelessWidget {
 
         return HomeTileNumber(
           value: _formatVolume(current),
-          unit: 'kg',
+          unit: l10n.commonKg,
           title: name,
-          subtitle: hasData ? 'This week' : context.l10n.widgetNotLogged,
+          subtitle: hasData ? l10n.calendarThisWeek : l10n.widgetNotLogged,
         );
       },
     );
@@ -60,34 +63,62 @@ class VolumeTile extends StatelessWidget {
 class _VolumeChart extends StatelessWidget {
   const _VolumeChart({
     required this.values,
+    required this.total,
     required this.name,
     required this.hasData,
   });
 
   final List<int> values;
+  final int total;
   final String name;
   final bool hasData;
 
+  String _formatVolume(int value) {
+    if (value >= 1000) {
+      final k = value / 1000;
+      return k >= 10 ? k.toStringAsFixed(0) : k.toStringAsFixed(1);
+    }
+    return '$value';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final max = values.fold<int>(0, (a, b) => a > b ? a : b);
     final labels = const ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+    final todayIndex = DateTime.now().weekday - 1;
+    final accent = AppColors.accentOf(context);
+    final track = AppColors.component(context);
+    final secondary = AppColors.textSecondary(context);
+    final primary = AppColors.textPrimary(context);
 
     return Padding(
       padding: const EdgeInsets.only(right: 28, top: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-          ),
-          Text(
-            hasData ? 'Weekly volume' : context.l10n.widgetNotLogged,
-            style: TextStyle(
-              color: AppColors.textSecondary(context),
-              fontSize: 12,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: HomeWidgetChrome(
+                  title: name,
+                  subtitle: hasData
+                      ? l10n.widgetWeeklyVolume
+                      : l10n.widgetNotLogged,
+                ),
+              ),
+              if (hasData)
+                Text(
+                  '${_formatVolume(total)} ${l10n.commonKg}',
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Expanded(
@@ -95,22 +126,53 @@ class _VolumeChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(values.length, (index) {
                 final value = values[index];
-                final factor = max == 0 ? 0.0 : value / max;
+                final isToday = index == todayIndex;
+                final factor = max == 0 || value == 0 ? 0.0 : value / max;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Flexible(
-                          child: FractionallySizedBox(
-                            heightFactor: factor.clamp(0.08, 1.0),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: AppColors.accentOf(context),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final barH = value == 0
+                                    ? 0.0
+                                    : (constraints.maxHeight * factor)
+                                        .clamp(6.0, constraints.maxHeight);
+                                return Stack(
+                                  alignment: Alignment.bottomCenter,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      height: constraints.maxHeight,
+                                      decoration: BoxDecoration(
+                                        color: track.withValues(alpha: 0.45),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                    ),
+                                    if (barH > 0)
+                                      Container(
+                                        width: double.infinity,
+                                        height: barH,
+                                        decoration: BoxDecoration(
+                                          color: accent,
+                                          borderRadius:
+                                              BorderRadius.circular(5),
+                                          border: isToday
+                                              ? Border.all(
+                                                  color: primary,
+                                                  width: 1.2,
+                                                )
+                                              : null,
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -119,7 +181,9 @@ class _VolumeChart extends StatelessWidget {
                           labels[index],
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.textSecondary(context),
+                            fontWeight:
+                                isToday ? FontWeight.w700 : FontWeight.w400,
+                            color: isToday ? primary : secondary,
                           ),
                         ),
                       ],

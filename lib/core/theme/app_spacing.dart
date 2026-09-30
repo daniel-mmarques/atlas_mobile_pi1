@@ -13,11 +13,11 @@ abstract class AppSpacing {
   static const double cardPadding = 16;
   static const double sectionGap = 16;
 
-  static const double navHeight = 72;
+  static const double navHeight = 64;
   static const double shellHeaderHeight = 56;
 
   /// Clearance acima da nav flutuante (sem safe area; some MediaQuery.padding).
-  static const double shellBottomInset = navHeight + sm;
+  static const double shellBottomInset = navHeight + xs;
 
   /// Alvos de toque / botões (Apple HIG ≥ 44).
   static const double minTouch = 44;

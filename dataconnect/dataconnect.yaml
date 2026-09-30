@@ -1,0 +1,13 @@
+specVersion: "v1"
+serviceId: "atlas-160cf-service"
+location: "southamerica-east1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "atlas-database"
+      cloudSql:
+        instanceId: "atlas-160cf-instance"
+      # Drop unused columns/tables so Cloud SQL matches GraphQL exactly.
+      schemaValidation: "STRICT"
+connectorDirs: ["./connector"]

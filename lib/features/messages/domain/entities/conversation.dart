@@ -1,5 +1,4 @@
 import 'package:atlas_mobile_pi1/features/messages/domain/enums/conversation_type.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ConversationParticipant {
   const ConversationParticipant({
@@ -20,22 +19,6 @@ class ConversationParticipant {
       return u.startsWith('@') ? u : '@$u';
     }
     return name.isNotEmpty ? name : 'User';
-  }
-
-  Map<String, dynamic> toMap() => {
-        'userId': userId,
-        'name': name,
-        'username': username,
-        'photoUrl': photoUrl,
-      };
-
-  factory ConversationParticipant.fromMap(Map<String, dynamic> map) {
-    return ConversationParticipant(
-      userId: map['userId'] as String? ?? '',
-      name: map['name'] as String? ?? 'User',
-      username: map['username'] as String? ?? '',
-      photoUrl: map['photoUrl'] as String? ?? '',
-    );
   }
 }
 
@@ -87,46 +70,6 @@ class Conversation {
       return '~ $lastSenderName: $lastMessage';
     }
     return lastMessage;
-  }
-
-  factory Conversation.fromMap(
-    String id,
-    Map<String, dynamic> map,
-    String currentUserId,
-  ) {
-    final type = ConversationTypeStorage.fromStorage(map['type'] as String?);
-    final participantMaps = (map['participants'] as List<dynamic>? ?? [])
-        .whereType<Map>()
-        .map((e) => ConversationParticipant.fromMap(
-              Map<String, dynamic>.from(e),
-            ))
-        .toList();
-
-    ConversationParticipant? peer;
-    for (final p in participantMaps) {
-      if (p.userId != currentUserId) {
-        peer = p;
-        break;
-      }
-    }
-
-    final updatedAt = map['updatedAt'];
-    final title = map['title'] as String? ?? '';
-
-    return Conversation(
-      id: id,
-      type: type,
-      title: title,
-      participantIds:
-          (map['participantIds'] as List<dynamic>? ?? []).cast<String>(),
-      participants: participantMaps,
-      lastMessage: map['lastMessage'] as String? ?? '',
-      lastSenderName: map['lastSenderName'] as String? ?? '',
-      updatedAt: updatedAt is Timestamp ? updatedAt.toDate() : DateTime.now(),
-      createdBy: map['createdBy'] as String?,
-      inviteToken: map['inviteToken'] as String?,
-      peerPhotoUrl: peer?.photoUrl ?? '',
-    );
   }
 
   static Conversation generalPlaceholder() {
